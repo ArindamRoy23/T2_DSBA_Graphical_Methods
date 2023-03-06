@@ -1,7 +1,7 @@
 /*
 
 Definition of include statements and of utilities
-for Iteration and File Listing 
+for Iteration, File Listing 
 
 */
 #include "rapidxml.hpp"
@@ -76,4 +76,27 @@ struct{
 } IterTools;
 
 #endif // Itertools_H
+
+#ifndef VariousTools_H
+#define VariousTools_H
+
+struct{
+
+    float computePixelsDistance(
+            int xCoord1, 
+            int xCoord2,
+            int yCoord1, 
+            int yCoord2 
+        ){
+            int xDist = xCoord1 - xCoord2;
+            int yDist = yCoord1 - yCoord2;
+            int totDist = xDist*xDist + yDist*yDist;
+            float dist = sqrt(static_cast<float>(totDist));
+            return dist;
+        }
+
+} VariousTools;
+
+#endif // VariousTools_h
+
 #endif // Functions_H

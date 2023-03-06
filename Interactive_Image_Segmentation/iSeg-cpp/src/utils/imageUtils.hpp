@@ -21,23 +21,33 @@ struct{
     cv::Mat loadJpegImageCPU(
             const std::string& pathToImage
         ){
+        /*
+        Dependencies of this function (for debugging):
+            __None__
+        */
         cv::Mat loadedImage = cv::imread(pathToImage);
         return loadedImage;
     };
-
     // Loads Jpeg Image on GPU memory as cv::cuda::GpuMat object
     cv::cuda::GpuMat loadJpegImageGPU(
             const std::string& pathToImage
         ){
+        /*
+        Dependencies of this function (for debugging):
+            this -> loadJpegImageCPU
+        */
         cv::Mat loadedImage = this -> loadJpegImageCPU(pathToImage);
         cv::cuda::GpuMat loadedImageGPU(loadedImage);
         return loadedImageGPU;
     };
-
     // Loads NIfTI image on CPU memory as cv::Mat object
     cv::Mat loadNIfTIImageCPU(
             const std::string& pathToImage
         ){
+        /*
+        Dependencies of this function (for debugging):
+            __None__
+        */
         typedef itk::Image<float, 3> ImageType;
         typedef itk::ImageFileReader<ImageType> ReaderType;
         ReaderType::Pointer reader = ReaderType::New();
@@ -52,16 +62,18 @@ struct{
         )
         return loadedImage;
     };
-
     // Loads NIgfTI image on GPU memory as cv::cuda::GpuMat object
     cv::cuda::GpuMat loadNIfTIImageGPU(
             const std::string& pathToImage
         ){
+        /*
+        Dependencies of this function (for debugging):
+            this -> loadNIfTIImageCPU
+        */
         cv::Mat loadedImage = this -> loadNIfTIImageCPU(pathToImage);
         cv::gpu::GpuMat loadedImageGPU(loadedImage);
         return loadedImageGPU;
     }
-
 } ImageFunctions;
 
 #endif // ImagIOFunctions_H

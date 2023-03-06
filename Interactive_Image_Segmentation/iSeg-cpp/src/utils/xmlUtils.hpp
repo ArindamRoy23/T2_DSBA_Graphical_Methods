@@ -41,7 +41,10 @@ struct{
             const std::string& annotationTagName, // "polygon" is the tag name for the annotation
             const std::string& classTagName // "tag" is the tag name for the class
         ){
-        
+        /*
+        Dependencies of this function (for debugging):
+            this -> readXLMToString
+        */
         std::string xlm = this -> readXLMToString(XLMPath);
         rapidxml::xml_document<> doc;
         doc.parse<0>(&xml[0]);
@@ -61,6 +64,10 @@ struct{
             const std::string& annotationTagName, // "polygon" is the tag name for the annotation
             const std::string& classTagName // "tag" is the tag name for the class 
         ){
+        /*
+        Dependencies of this function (for debugging):
+            this -> getTagValuesFromXLMString
+        */
         std::vector<std::string> XLMFilePaths = DirTools.getFilesPath(pathToFolder);
         std::map<std::string, int> classNameMap;
         int placeholder = 0;
@@ -80,11 +87,16 @@ struct{
     // i.e.: [x1, y1, x2, y2, ...] 
     std::map<int, std::vector<int>> mapPixelsToClass(
             const std::string XLMFilePath, 
-            std::map<std::string, int>& classMap, // map created with IterTools.mapClassesToInt utility
+            std::map<std::string, int>& classMap, // map to be created with IterTools.mapClassesToInt utility
             const std::string& annotationTagName, // "polygon" is the tag name for the annotation
             const std::string& classTagName // "tag" is the tag name for the class 
             const std::string& pointTagName,
         ){
+        /*
+        Dependencies of this function (for debugging):
+            this -> readXLMToString
+            iterTools.mapClassesToInt (not necessary a dependence)
+        */
         std::map<int, std::vector<int>> pixelMap;
         std::string xlmString = this -> readXLMToString(XLMFilePath);
         rapidxml::xml_document<> doc;
