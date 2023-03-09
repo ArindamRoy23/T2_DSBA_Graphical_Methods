@@ -26,3 +26,28 @@ Scribbles provided as medical images NII files
 * Armadillo (https://arma.sourceforge.net/)
 * ITK (https://itk.org/)
 
+
+src
+    utils
+        FileHandling -> scribbles, image reading
+        Parallelization -> cuda kernels
+    
+    Probability (folder)
+        class: ProbabilityDensityEstimator
+            class: Likelihood
+            class: Prior
+                class (Likelihood, Prior): Energy
+                    class: Primal
+                    class: Dual
+
+    Optimization (folder)                  
+        class: AlgoOptimization
+            class: PrimalDualOptimization
+    
+    Visualization (folder)
+        class VizSegmentation
+
+    main.py
+        - loads image, scribbles
+        - model
+        - computes segmentation
