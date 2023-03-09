@@ -77,7 +77,7 @@ class FileReader(object):
     """
     def __init__(
             self, 
-            str | os.path.Path: path_to_file
+            str: path_to_file
         ):
         """"
         __init__(self, _path_to_file):
@@ -101,7 +101,7 @@ class JpegImageReader(FileReader):
     """
     def __init__(
             self, 
-            str | os.path.Path: path_to_file
+            str: path_to_file
         ) -> None:
         """
         __init__(self, path_to_file):
@@ -132,6 +132,17 @@ class JpegImageReader(FileReader):
         image_tensor = transform(image)
         return image_tensor
     
+    def get_image_array(
+            self
+        ) -> np.ndarray:
+        """
+        get_image_array(self):
+            returns the underlying image as a np.ndarray object
+        """
+        image_tensor = self.get_image_tensor()
+        image_array = image_tensor.numpy()
+        return image_array
+    
 class NIfTIImageReader(FileReader):
     """
     NIfTIImageReader(FileReader):
@@ -139,7 +150,7 @@ class NIfTIImageReader(FileReader):
     """
     def __init__(
             self, 
-            str | os.path.Path: path_to_file
+            str: path_to_file
         ) -> None:
         """
         __init__(self, path_to_file):
@@ -168,6 +179,18 @@ class NIfTIImageReader(FileReader):
         data = image.get_fdata()
         image_tensor = torch.from_numpy(data)
         return image_tensor
+     
+    def get_image_array(
+            self
+        ) -> np.ndarray:
+        """
+        get_image_array(self):
+            returns the underlying image as a np.ndarray object
+        """
+        image_tensor = self.get_image_tensor()
+        image_array = image_tensor.numpy()
+        return image_array
+    
 
 class NIfTIScribbleReader(NIfTIImageReader):
     """
@@ -176,7 +199,7 @@ class NIfTIScribbleReader(NIfTIImageReader):
     """
     def __init__(
             self,
-            str | os.path.Path: path_to_file,
+            str: path_to_file,
         ) -> None:
         """
         __init__(self, path_to_file):
@@ -204,7 +227,7 @@ class XMLScribbleReader(FileReader):
     """
     def __init__(
             self,
-            str | os.path.Path: path_to_file
+            str: path_to_file
         ) -> None:
         """
         __init__(self, path_to_file):
@@ -245,66 +268,3 @@ class XMLScribbleReader(FileReader):
                 y = point.find("Y").xml_text
                 encoded_scribbles[class_name].append([x, y])
         return dict(encode_scribbles)
-
-
-class TargetImage(NIfTIImageReader, JpegImageReader):
-    """
-    TargetImage(NIfTIImageReader, JpegImageReader):
-        Initializes target image, whether it is a Jpeg or a NIfTI file 
-        (as specified by the is_jpeg attribute)
-
-    This is the ultimate object with which we will interact later
-    """
-    def __init__(
-            self,
-            str | os.path.Path: path_to_file
-            bool: is_jpeg = True,
-        ) -> None:
-        """
-        __init__(self, path_to_file):
-            calls parent class initializer
-        """
-        self.is_jpeg = is_jpeg
-        super(TargetImage, self).__init__(path_to_file)
-    
-    def get_image_tensor(
-            self
-        ) -> Tensor:
-        """
-        get_image_tensor(self):
-            gets the underlying image as a torch.Tensor object
-        """
-        image = JpegImageReader.get_image_tensor(self) if self.is_jpeg\
-                else NIfTIImageReader.get_image_tensor(self)
-        return image
-     
-class EncodedScribble(XMLScribbleReader, NIfTIScribbleReader):
-    """
-    EncodedScribble(XMLScribbleReader, NIfTIScribbleReader):
-        Initializes encoded scribble, whether it is a XML or a NIfTI file 
-        (as specified by the is_jpeg attribute)
-        
-    This is the ultimate object with which we will interact later
-    """
-    def __init__(
-            self,
-            str | os.path.Path: path_to_file
-            bool: is_xml = True,
-        ) -> None:
-        """
-        __init__(self, path_to_file):
-            calls parent class initializer
-        """
-        self.is_xml = is_xml
-        super(EncodedScribble, self).__init__(path_to_file)
-
-    def get_encoded_scribble(
-            self
-        ) -> dict:
-        """
-        get_encoded_scribble(NIfTIImageReader, JpegImageReader):
-            gets the underlying scribble, encoded in a dictionary
-        """
-        encoded_scribble = XMLScribbleReader.encode_scribble(self) if self.is_xml\
-                else NIfTIScribbleReader.encode_scribble(self)
-        return encoded_scribble
