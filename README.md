@@ -27,6 +27,7 @@ Scribbles provided as medical images NII files
 * ITK (https://itk.org/)
 
 
+``````
 src
     utils
         FileHandling -> scribbles, image reading
@@ -51,3 +52,6 @@ src
         - loads image, scribbles
         - model
         - computes segmentation
+
+
+
