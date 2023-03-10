@@ -38,8 +38,15 @@ src
             class: Likelihood
             class: Prior
                 class (Likelihood, Prior): Energy
-                    class: Primal
-                    class: Dual
+                    class: Primal equation 29
+                        Primal.fit(Prior, Likelihood): # for fitting primal energy 
+                            arguments:
+                                Prior: Per(Omega_i) for all i in range(n_classes): shape: (n_classes, 1) 
+                                    # one scalar per class (eq 22, 23 of paper)
+                                Likelihood(class_i) for all i in range(n_classes): shape: (n_classes, image_width, image_height) 
+                                    # (f_i at equation 17 of the paper)
+
+                    class: Dual (equation 30)
 
     Optimization (folder)                  
         class: AlgoOptimization

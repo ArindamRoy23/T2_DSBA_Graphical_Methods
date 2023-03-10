@@ -126,6 +126,8 @@ class JpegImageReader(FileReader):
         """
         get_image_tensor(self):
             returns the underlying image as a Tensor object
+            IMPORTANT NOTICE: the shape elements should be in
+            the following order (n_channels, image_width, image_height)
         """
         transform = transforms.ToTensor()
         image = self.__get_file_content()
@@ -138,6 +140,8 @@ class JpegImageReader(FileReader):
         """
         get_image_array(self):
             returns the underlying image as a np.ndarray object
+            IMPORTANT NOTICE: the shape elements should be in
+            the following order (n_channels, image_width, image_height)
         """
         image_tensor = self.get_image_tensor()
         image_array = image_tensor.numpy()
@@ -174,6 +178,8 @@ class NIfTIImageReader(FileReader):
         """
         get_image_tensor(self):
             returns the underlying image as a Tensor object
+            IMPORTANT NOTICE: the shape elements should be in
+            the following order (n_channels, image_width, image_height)
         """
         image = self.__get_file_content()
         data = image.get_fdata()
@@ -186,6 +192,8 @@ class NIfTIImageReader(FileReader):
         """
         get_image_array(self):
             returns the underlying image as a np.ndarray object
+            IMPORTANT NOTICE: the shape elements should be in
+            the following order (n_channels, image_width, image_height)
         """
         image_tensor = self.get_image_tensor()
         image_array = image_tensor.numpy()
@@ -264,7 +272,8 @@ class XMLScribbleReader(FileReader):
             class_name = annotation.find(class_tag).xml_text
             points = annotation.find_all(point_tag)
             for point in points:
-                x = point.find("X").xml_text
-                y = point.find("Y").xml_text
-                encoded_scribbles[class_name].append([x, y])
+                x = int(point.find("X").xml_text)
+                y = int(point.find("Y").xml_text) 
+                encoded_scribbles[class_name].append(x)
+                encoded_scribbles[class_name].append(y)
         return dict(encode_scribbles)
