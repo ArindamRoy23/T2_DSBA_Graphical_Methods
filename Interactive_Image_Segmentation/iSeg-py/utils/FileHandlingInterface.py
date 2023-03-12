@@ -68,11 +68,21 @@ class TargetImage(NIfTIImageReader, JpegImageReader):
             self
         ) -> tuple:
         """
-        gets_image_shape(self):
+        get_image_shape(self):
             gets the shape of the underlying image array.
         """
         image_array = self.get_image_array()
         return tuple(image_array.shape[1:])
+    
+    def get_image_channels(
+            self
+        ) -> tuple:
+        """
+        get_image_channels(self):
+            gets number of image channels
+        """
+        image_array = self.get_image_array()
+        return image_array.shape[0]
      
 class EncodedScribble(XMLScribbleReader, NIfTIScribbleReader):
     """
