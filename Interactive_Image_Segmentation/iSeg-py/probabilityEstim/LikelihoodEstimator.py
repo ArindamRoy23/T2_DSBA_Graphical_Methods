@@ -1,42 +1,6 @@
-import numpy as np 
-import numpy
+from .probabilityDensityEstimator import *
+from ..utils.ProbaUtils import * 
 
-from numba import cuda
-from torch import Tensor
-
-from ..utils.FileHandlingInterface import TargetImage, EncodedScribble
-from ..utils.ParallelizationUtils import __find_class_pixelwise_closest_scribble_point_cuda_
-
-class ProbabilityDensityEstimator(object):
-    """
-    Most abstract class for representing probability density estimators
-    It will be the parent of the LikelihoodEstimator and PriorEstimator classes
-    """
-    def __init__(
-            self,
-            int: n_classes,
-            bool: on_gpu = True
-        ) -> None:
-        """
-        __init__(self):
-            initializes the object given the number of classes considered 
-            for the segmentation task
-        """
-        self.n_classes = n_classes
-        self.on_gpu = on_gpu
-
-    def _fit(
-            self,
-            TargetImage: target_image,
-            EncodedScribble: encoded_scribble
-        ) -> ndarray | Tensor:
-        """"
-        _fit(self, target_image, encoded_scribble):
-            fits the probability distribution to the given
-            pair target_image, encoded_scribble
-        """
-        pass
-   
 class LikelihoodEstimator(ProbabilityDensityEstimator):
     """
     LikelihoodEstimator(ProbabilityDensityEstimator):
@@ -103,21 +67,11 @@ class LikelihoodEstimator(ProbabilityDensityEstimator):
             Given a pixel's coordinates and the scribble_coordinates array
             finds the l2 distance to the closest scribble point
         """
-        l2_distance = lambda x1, x2, y1, y2: ((x1 - x2)**2 + (y1 - y2)**2)**(1/2) 
-        min_distance = float("inf")
-        n_scribble_pixels = scribble_coordinates.shape[0] # flat vector, only one element
-        for idx in range(0, n_scribble_pixels - 1, 2):
-            x_coord_scribble = scribble_coordinates[idx]
-            y_coord_scribble = scribble_coordinates[idx + 1]
-            # l2 distance
-            distance = lp_distance(
-                x_coord, 
-                x_coord_scribble, 
-                y_coord, 
-                y_coord_scribble
-            )
-            if distance < min_distance:
-                min_distance = distance
+        min_distance = __find_scribble_point_with_minimum_distance(
+            x_coord,
+            y_coord, 
+            scribble_coordinates
+        )
         return min_distance
 
     def __find_class_pixelwise_closest_scribble_point_cuda_(
@@ -299,34 +253,21 @@ class LikelihoodEstimator(ProbabilityDensityEstimator):
                 k(x - x_ij), where k is the kernel function. 
                 The mean will be given by the value of the pixel (i.e.: kernel is centered at pixel x)
         """
-        n_dimensions = x.shape[0] # either 2 for spatial kernels or 3 for chromo ones
-        covariance_matrix = cp.identity(n_dimensions) if self.on_gpu \
-            else np.identity(n_dimensions)
-        covariance_matrix = sigma * covariance_matrix
-        det_covariance = cp.linalg.det(covariance_matrix) if self.on_gpu \
-            else np.linalg.det(covariance_matrix)
-        inv_covariance = cp.linalg.inv(covariance_matrix) if self.on_gpu \
-            else np.linalg.inv(covariance_matrix)
-        exponent_offset = x - mu
-        exponent = cp.dot(exponent_offset.T, inv_covariance) if self.on_gpu \
-            else np.dot(exponent_offset.T, inv_covariance)
-        exponent = cp.dot(exponent, exponent_offset) if self.on_gpu \
-            else np.dot(exponent, exponent_offset)
-        exponent = -0.5 * exponent
-        norm_denominator = cp.sqrt(det_covariance) * (2 * cp.pi)**(n_dimensions / 2) if self.on_gpu \
-            else np.sqrt(det_covariance) * (2 * np.pi)**(n_dimensions / 2)
-        norm = 1/norm_denominator
-        kernel_val = norm * cp.exp(exponent) if self.on_gpu \
-            else norm * np.exp(exponent) 
+        kernel_val = __multivariate_gaussian_kernel(
+            x, 
+            mu, 
+            sigma, 
+            self.on_gpu
+        )
         return kernel_val
 
     def __pixel_multivariate_gaussian_kernel(
             self,  
             ndarray: x, # target pixel information: either of shape (n_channels, ) for chromatic k or (2, ) for the spatial one
             ndarray: scribble_coordinates, # coordinates of the scribble points
-            ndarray: pixelwise_kernel_width, # kernel width for each pixel
             bool: spatial = True, # If true, computes the spatial kernel else the chromatic one,
-            *args # optional argument, must be passed if not spatial. It would contain the chromatic value of the scribble pixels
+            *args, # optional argument, must be passed if not spatial. It would contain the chromatic value of the scribble pixels
+            **kwargs
         ) -> ndarray: # output shape: (1, n_scribble_points)
         """
         __pixel_multivariate_gaussian_kernel(
@@ -341,33 +282,38 @@ class LikelihoodEstimator(ProbabilityDensityEstimator):
             Basically, at the given pixel, computes a kernel for each of the scribble pixels in scribble_coordinates
             The output shape should be of (1, n_scribble_points)
         """
-        # if we are computing the spatial kernel x must contain the coordinate informations of the pixel
-        # and the args should be empty (since we have already the scribble pixel information in the scribble_coordinates argument)
-        assert x.shape[0] == 2 and spatial and not args
-        # if we are computing the chromatic kernel x must contain the channel informations of the pixel
-        # and the args shall be passed as argument (since we need the chromatic information of the scribble pixels)
-        assert x.shape[0] == 3 and not spatial and args # probably not good, we need to dynamically check the number of channels
-        n_scribble_points = scribble_coordinates.shape[0] // 2
-        gaussian_kernels = cp.empty(n_scribble_points) if self.on_gpu \
-            else np.empty(n_scribble_points)
-        for idx in range(0, scribble_coordinates.shape[0], 2):
-            x_coord = scribble_coordinates[idx]
-            y_coord = scribble_coordinates[idx + 1]
-            # getting either the coordinates or the chromatic values of the scribble pixel
-            x_scribble = (x_coord, y_coord) if spatial else args[0][idx // 2, :]
-            ## TODO: COMPUTE KERNEL VALUE
-            kernel_argument = x - x_scribble
-            # get kernel width either from pixelwise 
-            kernel_width = pixelwise_kernel_width[x] if spatial \
-                else self.sigma
-            kernel_val = self.__multivariate_gaussian_kernel(
-                kernel_argument, 
-                x, 
-                kernel_width
-            )
-            ##
-            gaussian_kernels[idx] = kernel_val
-        return gaussian_kernels
+        gaussian_kernel = __pixelwise_multivariate_gaussian_kernel(
+            x, 
+            scribble_coordinates, 
+            self.on_gpu,
+            spatial = spatial,
+            *args, # probably passing only kwargs is the best choice
+            **kwargs
+        )
+        return gaussian_kernel
+
+    def __get_class_spatial_kernel_cuda_(
+            self, 
+            TargetImage: target_image, 
+            ndarray: scribble_coordinates, 
+            ndarray: pixelwise_distance_map, 
+            ndarray: output_array
+        ) -> ndarray: # output should be of size (image_width, image_height)
+        """"
+        __get_class_spatial_kernel_cuda_(
+                target_image, 
+                scribble_coordinates, 
+                pixelwise_distance_map,
+                output_array
+            ) -> ndarray:
+        simple wrapper method for the cuda kernel
+        """
+        __get_class_spatial_kernel_cuda_(
+            target_image, 
+            scribble_cooridnates, 
+            output_array,
+            pixelwise_distance_map = pixelwise_distance_map, 
+        )
 
     def __get_class_spatial_kernel_cuda(
             self, 
@@ -390,7 +336,15 @@ class LikelihoodEstimator(ProbabilityDensityEstimator):
             needs to call:
                 self.__find_pixelwise_closest_scribble_point for computing kernel width at each point 
         """
-        pass
+        target_size = target_immage.get_image_shape()
+        output_array = cp.empty(target_size)
+        self.__get_class_spatial_kernel_cuda_(
+            target_image, 
+            scribble_coordinates, 
+            pixelwise_distance_map, 
+            output_array
+        )
+        return output_array
 
     def __get_class_spatial_kernel(
             self, 
@@ -412,7 +366,6 @@ class LikelihoodEstimator(ProbabilityDensityEstimator):
 
             methods to be called here:
                 self.__find_pixelwise_closest_scribble_point for computing kernel width at each point
-
         """ 
         image_width, image_height = tearget_image.get_image_shape()
         image_array = target_image.get_image_array()
@@ -426,7 +379,7 @@ class LikelihoodEstimator(ProbabilityDensityEstimator):
                 spatial_kernel = self.__pixel_multivariate_gaussian_kernel(
                     coord, 
                     scribble_coordinates,
-                    pixelwise_distance_map
+                    pixelwise_distance_map = pixelwise_distance_map
                 )
                 image_spatial_kernel_map[:, x_coord, y_coord] = spatial_kernel
         return image_spatial_kernel_map
@@ -463,4 +416,53 @@ class LikelihoodEstimator(ProbabilityDensityEstimator):
 
             output shape: (n_scribble_points, image_width, image_height)
         """
-        pass
+        image_width, image_height = tearget_image.get_image_shape()
+        image_array = target_image.get_image_array()
+        n_scribble_points = scribble_coordinates.shape[0]
+        image_chromo_kernel_map = np.empty((n_scribble_points, image_width, image_height))
+        # instead of the scribble coordinates we should use their chromatic values
+        chromatic_values = self.__find_scribble_pixel_color_intensity_values(
+            target_image, 
+            scribble_coordinates
+        )
+        for x_coord in range(image_width):
+            for y_coord in range(image_height):
+                x_val = image_array[:, x_coord, y_coord]
+                spatial_kernel = self.__pixel_multivariate_gaussian_kernel(
+                    x_val, 
+                    chromatic_values,
+                    spatial = False,
+                    sigma = self.sigma
+                )
+                image_chromo_kernel_map[:, x_coord, y_coord] = spatial_kernel
+        return image_chromo_kernel_map
+        
+    def __get_class_factorised_kernel(
+            self, 
+            TargetImage: target_image, 
+            ndarray: scribble_coordinates,
+            ndarray: pixelwise_distance_map 
+        ) -> ndarray:
+        """
+        """
+        image_width, image_height = target_image.get_image_shape()
+        target_size = (image_width, image_height)
+        kernel_map = np.empty(target_size)
+        class_chromatic_kernel = self.__get_class_chromatic_kernel(
+            target_image, 
+            scribble_coordinates
+        )
+        class_spatial_kernel = self.__get_class_spatial_kernel(
+            target_image, 
+            scribble_coordinates, 
+            pixelwise_distance_map
+        )
+        for x_coord in range(image_width):
+            for y_coord in range(image_height):
+                pixel_spatial_kernel = class_spatial_kernel[:, x_coord, y_coord]
+                pixel_chromatic_kernel = class_chromatic_kernel[:, x_coord, y_coord]
+                assert pixel_chromatic_kernel.shape[0] == pixel_spatial_kernel.shape[0]
+                n_scribble_points = pixel_chromatic_kernel.shape[0]
+                pixel_factorised_kernel_value = np.dot(pixel_chromatic_kernel.T, pixel_spatial_kernel)
+                kernel_map[x_coord, y_coord] = pixel_factorised_kernel_value / n_scribble_points
+        return kernel_map

@@ -3,7 +3,7 @@
 ``ParallelizationUtils.py``
 
 Script containing the utils for parallelization.
-These utils are basically cuda kernels that are omonimous  to the class
+These utils are basically cuda kernels that are omonimous to the class
 methods they will be wrapped in.
 
 It is necessary to follow this practice as there is not a full support for
@@ -15,18 +15,17 @@ as wrapper for the cuda kernel, which is what we do.
 """
 
 from numba import cuda
-from .ProbaUtils import __find_scribble_point_with_minimum_distance
-
+from ..ProbaUtils import __find_scribble_point_with_minimum_distance
 
 import numpy as np
 import cupy as cp
 
-@cuda.jit # not so sure that we can actually compile a class method though
+@cuda.jit() # not so sure that we can actually compile a class method though
 def __find_class_pixelwise_closest_scribble_point_cuda_(
         TargetImage: target_image,
         ndarray: scribble_coordinates,
         ndarray: output_array
-    ) -> None : # cuda kernels cannot return anything, they just write the results to an array passes as argument
+    ) -> None: # cuda kernels cannot return anything, they just write the results to an array passes as argument
     """
     __find_class_pixelwise_closest_scibble_point_cuda_(self, TargetImage, scribble_coordinates):
         finds the closest point amongst the scribble point coordinates provided as argument.
@@ -54,4 +53,23 @@ def __find_class_pixelwise_closest_scribble_point_cuda_(
         # writing distance to output_array
         output_array[x_coord, y_coord] = distance
 
-
+@cuda.jit()
+def __get_class_spatial_kernel_cuda_(
+        TargetImage: target_image, 
+        ndarray: scribble_coordinates,
+        ndarray: pixelwise_distance_map, 
+        ndarray: output_array
+    ) -> None:
+    """
+    __get_class_spatial_kernel_cuda_(
+            target_image, 
+            scribble_coordinates, 
+            pixelwise_distance_map, 
+            output_array
+        ):
+        cuda kernel for computing the spatial kernel density estimator 
+        it will be called inside LikelihoodEstimator::__get_class_spatial_kernel_cuda_, 
+        which will be its wrapper inside the LikelihoodEstimator class
+    """
+    ## TODO
+    ##
