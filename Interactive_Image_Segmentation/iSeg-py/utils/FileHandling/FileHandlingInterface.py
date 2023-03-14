@@ -20,7 +20,7 @@ In both cases, it is possible to get the actual content of the objects as follow
 
 """
 
-from fileHandling import *
+from .FileHandlingProtected import *
 
 class TargetImage(NIfTIImageReader, JpegImageReader):
     """
@@ -32,8 +32,8 @@ class TargetImage(NIfTIImageReader, JpegImageReader):
     """
     def __init__(
             self,
-            str: path_to_file,
-            bool: is_jpeg = True,
+            path_to_file: str,
+            is_jpeg: bool = True,
         ) -> None:
         """
         __init__(self, path_to_file):
@@ -42,17 +42,6 @@ class TargetImage(NIfTIImageReader, JpegImageReader):
         self.is_jpeg = is_jpeg
         super(TargetImage, self).__init__(path_to_file)
     
-    def get_image_tensor(
-            self
-        ) -> Tensor:
-        """
-        get_image_tensor(self):
-            gets the underlying image as a torch.Tensor object
-        """
-        image = JpegImageReader.get_image_tensor(self) if self.is_jpeg\
-                else NIfTIImageReader.get_image_tensor(self)
-        return image
-    
     def get_image_array(
             self
         ) -> np.ndarray:
@@ -60,7 +49,7 @@ class TargetImage(NIfTIImageReader, JpegImageReader):
         get_image_array(self):
             returns the underlying image as a np.ndarray object
         """
-        image = JpegImageReader.get_image_array(self) if self.is_jpeg\
+        image_array = JpegImageReader.get_image_array(self) if self.is_jpeg\
                 else NIfTIImageReader.get_image_array(self)
         return image_array
     
@@ -94,8 +83,8 @@ class EncodedScribble(XMLScribbleReader, NIfTIScribbleReader):
     """
     def __init__(
             self,
-            str: path_to_file,
-            bool: is_xml = True,
+            path_to_file: str,
+            is_xml: bool = True,
         ) -> None:
         """
         __init__(self, path_to_file):
@@ -117,7 +106,7 @@ class EncodedScribble(XMLScribbleReader, NIfTIScribbleReader):
 
     def get_encoded_scribble(
             self,
-            dict: class_id_map 
+            class_id_map: dict 
         ) -> list[np.ndarray]:
         """"
         get_encoded_scribble(self):

@@ -1,3 +1,9 @@
+"""
+ProbaUtils.py
+    Contains some functions needed for computing the Likelihood.
+    These functions will be called inside the Likelihood (wrapper) methods
+"""
+
 import numpy as np
 import cupy as cp
 

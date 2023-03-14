@@ -61,14 +61,15 @@ In both cases, it is possible to get the actual content of the objects as follow
 """
 
 import torchvision.transforms as transforms
-import torch.Tensor as Tensor
+import numpy as np
 
+from torch import Tensor, from_numpy
 from collections import defaultdict
 from bs4 import BeautifulSoup
 from pathlib import Path
 from PIL import Image
-from  nibabel.nifti1 import Nifti1Image as Nifti1Image
-from nib.loadsave import load as nib_load
+from nibabel.nifti1 import Nifti1Image as Nifti1Image
+from nibabel.loadsave import load as nib_load
 
 class FileReader(object):
     """
@@ -77,7 +78,7 @@ class FileReader(object):
     """
     def __init__(
             self, 
-            str: path_to_file
+            path_to_file: str
         ):
         """"
         __init__(self, _path_to_file):
@@ -101,7 +102,7 @@ class JpegImageReader(FileReader):
     """
     def __init__(
             self, 
-            str: path_to_file
+            path_to_file: str
         ) -> None:
         """
         __init__(self, path_to_file):
@@ -117,10 +118,10 @@ class JpegImageReader(FileReader):
             returns the underlying image as a Image image object   
         """
         path = self.path_to_file
-        with Image.open(self.path_to_file) as image:
-            return image
+        image =  Image.open(path)
+        return image
 
-    def get_image_tensor(
+    def get_image_array(
             self
         ) -> Tensor:
         """
@@ -129,23 +130,11 @@ class JpegImageReader(FileReader):
             IMPORTANT NOTICE: the shape elements should be in
             the following order (n_channels, image_width, image_height)
         """
-        transform = transforms.ToTensor()
         image = self.__get_file_content()
-        image_tensor = transform(image)
-        return image_tensor
-    
-    def get_image_array(
-            self
-        ) -> np.ndarray:
-        """
-        get_image_array(self):
-            returns the underlying image as a np.ndarray object
-            IMPORTANT NOTICE: the shape elements should be in
-            the following order (n_channels, image_width, image_height)
-        """
-        image_tensor = self.get_image_tensor()
-        image_array = image_tensor.numpy()
+        image_array = np.asarray(image)
+        image_array = image_array.transpose((2, 1, 0))
         return image_array
+    
     
 class NIfTIImageReader(FileReader):
     """
@@ -154,7 +143,7 @@ class NIfTIImageReader(FileReader):
     """
     def __init__(
             self, 
-            str: path_to_file
+            path_to_file: str
         ) -> None:
         """
         __init__(self, path_to_file):
@@ -207,7 +196,7 @@ class NIfTIScribbleReader(NIfTIImageReader):
     """
     def __init__(
             self,
-            str: path_to_file,
+            path_to_file: str,
         ) -> None:
         """
         __init__(self, path_to_file):
@@ -235,7 +224,7 @@ class XMLScribbleReader(FileReader):
     """
     def __init__(
             self,
-            str: path_to_file
+            path_to_file: str
         ) -> None:
         """
         __init__(self, path_to_file):
@@ -257,9 +246,9 @@ class XMLScribbleReader(FileReader):
 
     def encode_scribble(
             self,
-            str: annotation_tag = "polygon",
-            str: class_tag = "tag",
-            str: point_tag = "point"
+            annotation_tag: str = "polygon",
+            class_tag: str = "tag",
+            point_tag: str = "point"
         ) -> dict:
         """        
         encode_scribble(self):
@@ -269,11 +258,11 @@ class XMLScribbleReader(FileReader):
         soup = self.__get_file_content()
         annotations = soup.find_all(annotation_tag)
         for annotation in annotations:
-            class_name = annotation.find(class_tag).xml_text
+            class_name = annotation.find(class_tag).contents[0]
             points = annotation.find_all(point_tag)
             for point in points:
-                x = int(point.find("X").xml_text)
-                y = int(point.find("Y").xml_text) 
+                x = int(point.find("X").contents[0])
+                y = int(point.find("Y").contents[0]) 
                 encoded_scribbles[class_name].append(x)
                 encoded_scribbles[class_name].append(y)
-        return dict(encode_scribbles)
+        return dict(encoded_scribbles)
