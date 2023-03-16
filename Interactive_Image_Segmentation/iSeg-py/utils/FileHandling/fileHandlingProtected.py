@@ -262,7 +262,9 @@ class XMLScribbleReader(FileReader):
             points = annotation.find_all(point_tag)
             for point in points:
                 x = int(point.find("X").contents[0])
-                y = int(point.find("Y").contents[0]) 
-                encoded_scribbles[class_name].append(x)
-                encoded_scribbles[class_name].append(y)
+                y = int(point.find("Y").contents[0])
+                coord = [x, y] 
+                #encoded_scribbles[class_name].append(x)
+                #encoded_scribbles[class_name].append(y)
+                encoded_scribbles[class_name].append(coord)
         return dict(encoded_scribbles)

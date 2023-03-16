@@ -9,9 +9,9 @@ import cupy as cp
 
 
 def __find_scribble_point_with_minimum_distance(
-        int: x_coord, 
-        int: y_coord,
-        ndarray: scribble_coordinates
+        x_coord: int, 
+        y_coord: int,
+        scribble_coordinates: np.ndarray
     ) -> float():
     """"
     __find_scribble_point_with_minimum_distance(
@@ -41,11 +41,11 @@ def __find_scribble_point_with_minimum_distance(
     return min_distance
 
 def __multivariate_gaussian_kernel(
-        ndarray: x, 
-        ndarray: mu, 
-        ndarray: sigma, # width of the kernel (Covariance matrix of gaussian)
-        bool: on_gpu
-    ) -> ndarray:
+        x: np.ndarray, 
+        mu: np.ndarray, 
+        sigma: np.ndarray, # width of the kernel (Covariance matrix of gaussian)
+        on_gpu: bool
+    ) -> np.ndarray:
     """
     __multivariate_gaussian_kernel(x, mu, sigma, on_gpu):
         computes the multivariate gaussian kernel 
@@ -75,12 +75,12 @@ def __multivariate_gaussian_kernel(
     return kernel_val
 
 def __pixelwise_multivariate_gaussian_kernel(
-        ndarray: x, # target pixel information: either of shape (n_channels, ) for chromatic k or (2, ) for the spatial one
-        ndarray: scribble_coordinates, # coordinates of the scribble points
-        bool: on_gpu, # whether to compile the function using cuda
-        bool: spatial = True, # If true, computes the spatial kernel else the chromatic one,
+        x: np.ndarray, # target pixel information: either of shape (n_channels, ) for chromatic k or (2, ) for the spatial one
+        scribble_coordinates: np.ndarray, # coordinates of the scribble points
+        on_gpu: bool, # whether to compile the function using cuda
+        spatial: bool = True, # If true, computes the spatial kernel else the chromatic one,
         **kwargs 
-    ) -> ndarray: # output shape (1, n_scribble_points)
+    ) -> np.ndarray: # output shape (1, n_scribble_points)
     """
     __pixel_multivariate_gaussian_kernel(
             self, 

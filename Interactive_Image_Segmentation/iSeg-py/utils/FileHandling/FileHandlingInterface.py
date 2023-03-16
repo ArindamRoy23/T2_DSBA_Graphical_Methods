@@ -105,8 +105,7 @@ class EncodedScribble(XMLScribbleReader, NIfTIScribbleReader):
         return encoded_scribble
 
     def get_encoded_scribble(
-            self,
-            class_id_map: dict 
+            self
         ) -> list[np.ndarray]:
         """"
         get_encoded_scribble(self):
@@ -119,9 +118,10 @@ class EncodedScribble(XMLScribbleReader, NIfTIScribbleReader):
                 associated to that class as a flat array (i.e.: [x1, y1, x2, y2, ...])
             
         """
-        n_classes = len(class_map)
-        output_list = [np.empty(0, )]*n_classes
         encoded_scribbles = self.__get_encoded_scribble()
+        n_classes = len(encoded_scribbles)
+        output_list = [np.empty(0, )]*n_classes
+        class_id_map = {key: idx for idx, key in enumerate(list(encoded_scribbles))}
         for class_name, pixel_list in encoded_scribbles.items():
             class_id = class_id_map[class_name]
             output_list[class_id] = np.array(pixel_list)

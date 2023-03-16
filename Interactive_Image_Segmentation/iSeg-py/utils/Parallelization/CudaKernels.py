@@ -13,52 +13,26 @@ However, it is possible to define such class member functions and use them
 as wrapper for the cuda kernel, which is what we do.
 
 """
-
-from numba import cuda
-from ..ProbaUtils import __find_scribble_point_with_minimum_distance
-
-import numpy as np
-import cupy as cp
-
-@cuda.jit() # not so sure that we can actually compile a class method though
-def __find_class_pixelwise_closest_scribble_point_cuda_(
-        TargetImage: target_image,
-        ndarray: scribble_coordinates,
-        ndarray: output_array
-    ) -> None: # cuda kernels cannot return anything, they just write the results to an array passes as argument
-    """
-    __find_class_pixelwise_closest_scibble_point_cuda_(self, TargetImage, scribble_coordinates):
-        finds the closest point amongst the scribble point coordinates provided as argument.
-        This will be used over each class.
-
-        This method is to be used for computations on the gpu
-
-        In the Kernel Density Estimation part this is necessary 
-        for computing the width of the spatial kernel (equation (14 of the paper))   
-
-        (i.e.: implement same __find_class_pixelwise_closest_scribble_point with cuda)
-        
-        Output shape: (1, image_width, image_heigth)
-    """
-    image_size = target_image.get_image_size()
-    # TODO continue computations in parallel on GPU
-    x_coord, y_coord = cuda.grid(2) # only need to iterate over the pixels, no channels involved
-    if x_coord < image_size[0] and y_coord < image_size[1]: # iterating over each pixel
-        # computing the distance to the closest scribble point of the class
-        distance = __find_scribble_point_with_minimum_distance(
-            x_coord, 
-            y_coord,
-            scribble_coordinates 
-        )
-        # writing distance to output_array
-        output_array[x_coord, y_coord] = distance
+from utils.Parallelization.CudaDeviceFunctions import *
 
 @cuda.jit()
-def __get_class_spatial_kernel_cuda_(
-        TargetImage: target_image, 
-        ndarray: scribble_coordinates,
-        ndarray: pixelwise_distance_map, 
-        ndarray: output_array
+def get_class_factorised_kernel_cuda_(
+        image_array: np.ndarray, 
+        scribble_coordinates: np.ndarray,
+        alpha: float,
+        sigma: float,
+        scribble_color_intensity_values: np.ndarray,
+        spatial_coord: np.ndarray, 
+        chromatic_value: np.ndarray,
+        spatial_kernel_argument: np.ndarray,
+        chromo_kernel_argument: np.ndarray,
+        spatial_covariance_matrix: np.ndarray, 
+        chromo_covariance_matrix: np.ndarray, 
+        spatial_inv_covariance_matrix: np.ndarray, 
+        chromo_inv_covariance_matrix: np.ndarray,   
+        spatial_kernel: np.ndarray, 
+        chromo_kernel: np.ndarray,  
+        output_array: np.ndarray,
     ) -> None:
     """
     __get_class_spatial_kernel_cuda_(
@@ -71,5 +45,46 @@ def __get_class_spatial_kernel_cuda_(
         it will be called inside LikelihoodEstimator::__get_class_spatial_kernel_cuda_, 
         which will be its wrapper inside the LikelihoodEstimator class
     """
-    ## TODO
-    ##
+    n_channels, image_width, image_height = image_array.shape
+    x_coord, y_coord = cuda.grid(2)
+    target_size = (image_width, image_height)
+    n_scribble_points = scribble_coordinates.shape[0]
+    #alpha = np.float64(alpha)
+    alpha = alpha.astype(np.float64).item()
+    __find_scribble_pixel_color_intensity_values(
+        image_array, 
+        scribble_coordinates, 
+        scribble_color_intensity_values
+    )
+    if x_coord < image_width and y_coord < image_height:
+        spatial_kernel_width = __find_scribble_point_with_minimum_distance(
+            x_coord, 
+            y_coord, 
+            scribble_coordinates
+        )
+        spatial_kernel_width = alpha * spatial_kernel_width
+        spatial_coord[0] = x_coord; spatial_coord[1] = y_coord
+        for channel in range(n_channels):
+            chromatic_value[channel] = image_array[channel, x_coord, y_coord]
+        __pixel_multivariate_gaussian_kernel(
+            spatial_coord, 
+            scribble_coordinates, 
+            spatial_kernel_width,
+            spatial_kernel_argument,
+            spatial_covariance_matrix, 
+            spatial_inv_covariance_matrix, 
+            spatial_kernel
+        )
+        __pixel_multivariate_gaussian_kernel(
+            chromatic_value,
+            scribble_color_intensity_values, 
+            sigma,
+            chromo_kernel_argument,
+            chromo_covariance_matrix, 
+            chromo_inv_covariance_matrix, 
+            chromo_kernel
+        )
+        factorised_kernel = 0.0
+        for idx in range(n_scribble_points):
+            factorised_kernel += spatial_kernel[idx] * chromo_kernel[idx]
+        output_array[x_coord, y_coord] = factorised_kernel / n_scribble_points
