@@ -2,8 +2,11 @@ import numpy as np
 
 class PriorEstimator:
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, img):
+        """
+        :param img: image of dimensions c x h x w
+        """
+        self.img = img
     
     def _gradient_I(self, img):
         """
@@ -31,7 +34,7 @@ class PriorEstimator:
         :param gamma: float
         """
         grayscale_img = np.mean(img, axis=0)[None]
-        abs_gradient_img = np.abs(self.gradient(grayscale_img))
+        abs_gradient_img = np.abs(self._gradient_I(grayscale_img))
         return np.exp(-abs_gradient_img*gamma)
     
     def _prior_energy(self, img, gamma, theta):
@@ -42,7 +45,8 @@ class PriorEstimator:
         :param gamma: float
         :param theta: segmentation of the image of dimensions n x h x w
         """
-        d_Theta = self._gradient_I(theta)
-        abs_d_Theta = np.abs(d_Theta)
-        g = self._g(img, gamma)
-        return 0.5*np.sum(g*abs_d_Theta)
+        d_Theta = self._gradient_I(theta) # 2 x c x h x w
+        abs_d_Theta = np.abs(d_Theta) # 2 x c x h x w
+        g = self._g(img, gamma) # 2 x h x w
+        prod = g*abs_d_Theta # 2 x c x h x w
+        return 0.5*np.sum(prod) # scalar
