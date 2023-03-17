@@ -231,16 +231,17 @@ class Likelihood(object):
             target_image: TargetImage, 
             scribble_coordinates: np.ndarray
         ) -> None:
+
         image_array = target_image.get_image_array()
         n_scribble_points = scribble_coordinates.shape[0]
         n_channels, image_width, image_height = image_array.shape
 
 
-        alpha = np.float32(self.alpha)
-        sigma = np.float32(self.sigma)
+        alpha = np.float64(self.alpha)
+        sigma = np.float64(self.sigma)
 
         scribble_color_intensity_values = np.empty((n_scribble_points, n_channels))
-        statial_coord = np.empty((2, ))
+        spatial_coord = np.empty((2, ))
         chromatic_value = np.empty((n_channels, )) # FIX
         spatial_kernel_argument = np.empty((2, ))
         chromo_kernel_argument = np.empty((n_channels, ))
@@ -251,11 +252,31 @@ class Likelihood(object):
         spatial_inv_covariance_matrix = np.empty((2, 2))
         chromo_covariance_matrix = np.empty((n_channels, n_channels))
         chromo_inv_covariance_matrix = np.empty((n_channels, n_channels))
+        spatial_kernel_exponent_offset = np.empty((2, ))
+        chromo_kernel_exponent_offset = np.empty((n_channels))
+        spatial_kernel_exponent = np.empty((2, ))
+        chromo_kernel_exponent = np.empty((n_channels))
+
 
         d_alpha = cuda.to_device(alpha)
         d_sigma = cuda.to_device(sigma)
         d_image_array = cuda.to_device(image_array)
         d_scribble_coordinates = cuda.to_device(scribble_coordinates)
+        d_scribble_color_intensity_values = cuda.to_device(scribble_color_intensity_values)
+        d_spatial_coord = cuda.to_device(spatial_coord)
+        d_chromatic_value = cuda.to_device(chromatic_value)
+        d_spatial_kernel_argument = cuda.to_device(spatial_kernel_argument)
+        d_chromo_kernel_argument = cuda.to_device(chromo_kernel_argument)
+        d_spatial_covariance_matrix = cuda.to_device(spatial_covariance_matrix)
+        d_chromo_covariance_matrix = cuda.to_device(chromo_covariance_matrix)
+        d_spatial_inv_covariance_matrix = cuda.to_device(spatial_inv_covariance_matrix)
+        d_chromo_inv_covariance_matrix = cuda.to_device(chromo_inv_covariance_matrix)
+        d_spatial_kernel = cuda.to_device(spatial_kernel)
+        d_chromo_kernel = cuda.to_device(chromo_kernel)
+        d_spatial_kernel_exponent = cuda.to_device(spatial_kernel_exponent)
+        d_chromo_kernel_exponent = cuda.to_device(chromo_kernel_exponent)
+        d_spatial_kernel_exponent_offset = cuda.to_device(spatial_kernel_exponent_offset)
+        d_chromo_kernel_exponent_offset = cuda.to_device(chromo_kernel_exponent_offset)
         d_output_array = cuda.to_device(output_array)
 
 
@@ -263,28 +284,33 @@ class Likelihood(object):
         blocks_per_grid_x = math.ceil(image_width / threads_per_block[0])
         blocks_per_grid_y = math.ceil(image_height / threads_per_block[1])
         blocks_per_grid = (blocks_per_grid_x, blocks_per_grid_y)
+
         cuda.synchronize()
         get_class_factorised_kernel_cuda_[blocks_per_grid, threads_per_block](
             d_image_array, 
             d_scribble_coordinates, 
             d_alpha, 
             d_sigma,
-            scribble_color_intensity_values,
-            statial_coord, 
-            chromatic_value,
-            spatial_kernel_argument, 
-            chromo_kernel_argument,    
-            spatial_covariance_matrix, 
-            chromo_covariance_matrix, 
-            spatial_inv_covariance_matrix, 
-            chromo_inv_covariance_matrix,
-            spatial_kernel, 
-            chromo_kernel,
+            d_scribble_color_intensity_values,
+            d_spatial_coord, 
+            d_chromatic_value,
+            d_spatial_kernel_argument, 
+            d_chromo_kernel_argument,    
+            d_spatial_covariance_matrix, 
+            d_chromo_covariance_matrix, 
+            d_spatial_inv_covariance_matrix, 
+            d_chromo_inv_covariance_matrix,
+            d_spatial_kernel, 
+            d_chromo_kernel,
+            d_spatial_kernel_exponent_offset, 
+            d_chromo_kernel_exponent_offset,
+            d_spatial_kernel_exponent, 
+            d_chromo_kernel_exponent,  
             d_output_array
         )
         cuda.synchronize()
-        output_array = cuda.to_host(d_output_array)
-        return output_array
+        #output_array = cuda.to_host(d_output_array)
+        return d_output_array # change back to return host array
 
     def __fit(
             self,  

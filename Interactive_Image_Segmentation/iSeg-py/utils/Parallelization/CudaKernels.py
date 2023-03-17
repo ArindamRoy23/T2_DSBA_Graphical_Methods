@@ -13,7 +13,7 @@ However, it is possible to define such class member functions and use them
 as wrapper for the cuda kernel, which is what we do.
 
 """
-from utils.Parallelization.CudaDeviceFunctions import *
+from .CudaDeviceFunctions import *
 
 @cuda.jit()
 def get_class_factorised_kernel_cuda_(
@@ -31,7 +31,11 @@ def get_class_factorised_kernel_cuda_(
         spatial_inv_covariance_matrix: np.ndarray, 
         chromo_inv_covariance_matrix: np.ndarray,   
         spatial_kernel: np.ndarray, 
-        chromo_kernel: np.ndarray,  
+        chromo_kernel: np.ndarray,
+        spatial_kernel_exponent_offset: np.ndarray,   
+        chromo_kernel_exponent_offset: np.ndarray,
+        spatial_kernel_exponent: np.ndarray, 
+        chromo_kernel_exponent: np.ndarray,  
         output_array: np.ndarray,
     ) -> None:
     """
@@ -50,14 +54,14 @@ def get_class_factorised_kernel_cuda_(
     target_size = (image_width, image_height)
     n_scribble_points = scribble_coordinates.shape[0]
     #alpha = np.float64(alpha)
-    alpha = alpha.astype(np.float64).item()
-    __find_scribble_pixel_color_intensity_values(
+    alpha = alpha.item()
+    find_scribble_pixel_color_intensity_values(
         image_array, 
         scribble_coordinates, 
         scribble_color_intensity_values
     )
     if x_coord < image_width and y_coord < image_height:
-        spatial_kernel_width = __find_scribble_point_with_minimum_distance(
+        spatial_kernel_width = find_scribble_point_with_minimum_distance(
             x_coord, 
             y_coord, 
             scribble_coordinates
@@ -66,22 +70,27 @@ def get_class_factorised_kernel_cuda_(
         spatial_coord[0] = x_coord; spatial_coord[1] = y_coord
         for channel in range(n_channels):
             chromatic_value[channel] = image_array[channel, x_coord, y_coord]
-        __pixel_multivariate_gaussian_kernel(
+        pixel_multivariate_gaussian_kernel(
             spatial_coord, 
             scribble_coordinates, 
             spatial_kernel_width,
             spatial_kernel_argument,
             spatial_covariance_matrix, 
-            spatial_inv_covariance_matrix, 
+            spatial_inv_covariance_matrix,
+            spatial_kernel_exponent_offset,
+            spatial_kernel_exponent,   
             spatial_kernel
         )
-        __pixel_multivariate_gaussian_kernel(
+        
+        pixel_multivariate_gaussian_kernel(
             chromatic_value,
             scribble_color_intensity_values, 
             sigma,
             chromo_kernel_argument,
             chromo_covariance_matrix, 
             chromo_inv_covariance_matrix, 
+            chromo_kernel_exponent_offset, 
+            chromo_kernel_exponent, 
             chromo_kernel
         )
         factorised_kernel = 0.0

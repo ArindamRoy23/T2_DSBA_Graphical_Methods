@@ -1,13 +1,10 @@
 from numba import cuda
-from ..ProbaUtils import __find_scribble_point_with_minimum_distance
-from ..FileHandling.FileHandlingInterface import *
-
 import numpy as np
 import cupy as cp
 import math 
 
 @cuda.jit(device = True)
-def __init_diagonal_matrix(
+def init_diagonal_matrix(
         matrix: np.ndarray, 
         value: float
     ) -> None:
@@ -17,7 +14,7 @@ def __init_diagonal_matrix(
         matrix[i, j] = value
 
 @cuda.jit(device = True)
-def __get_determinant_diagonal_matrix(
+def get_determinant_diagonal_matrix(
         matrix: np.ndarray
     ) -> float():
     determinant = 0.0
@@ -25,10 +22,31 @@ def __get_determinant_diagonal_matrix(
     # Set the diagonal elements to ones
     if i == j:
         determinant *= matrix[i, j]
-
+    return determinant
 
 @cuda.jit(device = True)
-def __find_scribble_point_with_minimum_distance(
+def dot_product_diagonal_matrix(
+        vector: np.ndarray,
+        matrix: np.ndarray, 
+        output_array: np.ndarray 
+    ) -> None:
+    n_dimensions = vector.shape[0]
+    for dimension in range(n_dimensions):
+        output_array[dimension] = vector[dimension]*matrix[dimension, dimension]
+
+@cuda.jit(device = True)
+def vector_dot_product(
+        vector1: np.ndarray, 
+        vector2: np.ndarray
+    ) -> float:
+    n_dimensions = vector1.shape[0]
+    product = 0.0
+    for dimension in range(n_dimensions):
+        product += vector1[dimension] * vector2[dimension]
+    return product
+
+@cuda.jit(device = True)
+def find_scribble_point_with_minimum_distance(
         x_coord: int, 
         y_coord: int, 
         scribble_coordinates: cp.ndarray
@@ -54,7 +72,7 @@ def __find_scribble_point_with_minimum_distance(
     return min_distance
 
 @cuda.jit(device = True)
-def __find_scribble_pixel_color_intensity_values(
+def find_scribble_pixel_color_intensity_values(
         image_array: np.ndarray, 
         scribble_coordinates: np.ndarray,
         output_array: np.ndarray
@@ -68,49 +86,57 @@ def __find_scribble_pixel_color_intensity_values(
             output_array[idx, channel] = image_array[channel, x_coord, y_coord]
 
 @cuda.jit(device = True)
-def __multivariate_gaussian_kernel(
+def multivariate_gaussian_kernel(
         x: np.ndarray, 
         mu: np.ndarray, 
         sigma: np.ndarray,
         covariance_matrix: np.ndarray,  
-        inv_covariance: np.ndarray, 
-        output_array: np.array
+        inv_covariance: np.ndarray,
+        exponent_offset: np.ndarray, 
+        exponent: np.ndarray, 
+        idx: int, 
+        output_array: np.ndarray, 
     ) -> None:
     n_dimensions = x.shape[0] # either 2 for spatial kernels or 3 for chromo ones
-    __init_diagonal_matrix(covariance_matrix, sigma)
-    __init_diagonal_matrix(inv_covariance, 1 / sigma)
-    det_covariance = __get_determinant_diagonal_matrix(covariance_matrix) ## DEFINE
-    exponent_offset = x - mu ## FIX
-
-    exponent = np.dot(exponent_offset.T, inv_covariance)
-    exponent = np.dot(exponent, exponent_offset)
-    exponent = -0.5 * exponent
-    norm_denominator = np.sqrt(det_covariance) * (2 * np.pi)**(n_dimensions / 2)
+    init_diagonal_matrix(covariance_matrix, sigma)
+    init_diagonal_matrix(inv_covariance, 1 / sigma)
+    det_covariance = get_determinant_diagonal_matrix(covariance_matrix) ## DEFINE
+    for dimension in range(n_dimensions):
+        exponent_offset[dimension] = x[dimension] - mu[dimension]
+    dot_product_diagonal_matrix(exponent_offset.T, inv_covariance, exponent)
+    exponent_ = vector_dot_product(exponent, exponent_offset)
+    exponent_ = -0.5 * exponent_
+    norm_denominator = math.sqrt(det_covariance) * (2 * math.pi)**(n_dimensions / 2)
     norm = 1 / norm_denominator
-    output_array = norm * np.exp(exponent)
+    output_array[idx] = norm * math.exp(exponent_)
 
 @cuda.jit(device = True)
-def __pixel_multivariate_gaussian_kernel(
+def pixel_multivariate_gaussian_kernel(
         x: np.ndarray, 
         scribble_coordinates: np.ndarray, 
         sigma: float,
         kernel_argument: np.ndarray,
         covariance_matrix: np.ndarray, 
-        inv_covariance: np.ndarray, 
+        inv_covariance: np.ndarray,
+        exponent_offset: np.ndarray,
+        exponent: np.ndarray,   
         output_array: np.ndarray
     ) -> None:
     n_scribble_points = scribble_coordinates.shape[0]
-    x = x.astype(np.float32)
+    #x = x.astype(np.float32)
     dimensions = x.shape[0]
     for idx in range(n_scribble_points):
         x_scribble = scribble_coordinates[idx]
         for dimension in range(dimensions):
             kernel_argument[dimension] = x[dimension] - x_scribble[dimension]
-        __multivariate_gaussian_kernel(
+        multivariate_gaussian_kernel(
             kernel_argument, 
             x, 
             sigma,
             covariance_matrix, 
             inv_covariance, 
+            exponent_offset, 
+            exponent,
+            idx, 
             output_array
         )
