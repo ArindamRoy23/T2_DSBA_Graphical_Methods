@@ -15,24 +15,23 @@ def init_diagonal_matrix(
 
 @cuda.jit(device = True)
 def get_determinant_diagonal_matrix(
-        matrix: np.ndarray
-    ) -> float():
-    determinant = 0.0
-    i, j = cuda.grid(2)
-    # Set the diagonal elements to ones
-    if i == j:
-        determinant *= matrix[i, j]
+        value: float,
+        n_dim: int
+    ) -> float:
+    determinant = 1.0
+    for dim in range(n_dim):
+        determinant *= value.item()
     return determinant
 
 @cuda.jit(device = True)
 def dot_product_diagonal_matrix(
         vector: np.ndarray,
-        matrix: np.ndarray, 
+        value: float,
         output_array: np.ndarray 
     ) -> None:
     n_dimensions = vector.shape[0]
     for dimension in range(n_dimensions):
-        output_array[dimension] = vector[dimension]*matrix[dimension, dimension]
+        output_array[dimension] = vector[dimension] * value
 
 @cuda.jit(device = True)
 def vector_dot_product(
@@ -90,20 +89,20 @@ def multivariate_gaussian_kernel(
         x: np.ndarray, 
         mu: np.ndarray, 
         sigma: np.ndarray,
-        covariance_matrix: np.ndarray,  
-        inv_covariance: np.ndarray,
+        #covariance_matrix: np.ndarray,  
+        #inv_covariance: np.ndarray,
         exponent_offset: np.ndarray, 
         exponent: np.ndarray, 
         idx: int, 
         output_array: np.ndarray, 
     ) -> None:
     n_dimensions = x.shape[0] # either 2 for spatial kernels or 3 for chromo ones
-    init_diagonal_matrix(covariance_matrix, sigma)
-    init_diagonal_matrix(inv_covariance, 1 / sigma)
-    det_covariance = get_determinant_diagonal_matrix(covariance_matrix) ## DEFINE
+    #init_diagonal_matrix(covariance_matrix, sigma)
+    #init_diagonal_matrix(inv_covariance, 1 / sigma)
+    det_covariance = get_determinant_diagonal_matrix(sigma, n_dimensions) ## DEFINE
     for dimension in range(n_dimensions):
         exponent_offset[dimension] = x[dimension] - mu[dimension]
-    dot_product_diagonal_matrix(exponent_offset.T, inv_covariance, exponent)
+    dot_product_diagonal_matrix(exponent_offset, 1.0 / sigma.item(),  exponent)
     exponent_ = vector_dot_product(exponent, exponent_offset)
     exponent_ = -0.5 * exponent_
     norm_denominator = math.sqrt(det_covariance) * (2 * math.pi)**(n_dimensions / 2)
@@ -116,8 +115,8 @@ def pixel_multivariate_gaussian_kernel(
         scribble_coordinates: np.ndarray, 
         sigma: float,
         kernel_argument: np.ndarray,
-        covariance_matrix: np.ndarray, 
-        inv_covariance: np.ndarray,
+        #covariance_matrix: np.ndarray, 
+        #inv_covariance: np.ndarray,
         exponent_offset: np.ndarray,
         exponent: np.ndarray,   
         output_array: np.ndarray
@@ -133,8 +132,8 @@ def pixel_multivariate_gaussian_kernel(
             kernel_argument, 
             x, 
             sigma,
-            covariance_matrix, 
-            inv_covariance, 
+            #covariance_matrix, 
+            #inv_covariance, 
             exponent_offset, 
             exponent,
             idx, 

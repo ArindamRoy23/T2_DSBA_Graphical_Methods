@@ -248,10 +248,10 @@ class Likelihood(object):
         spatial_kernel = np.empty((n_scribble_points, ))
         chromo_kernel = np.empty((n_scribble_points, ))
         output_array = np.empty((image_width, image_height))
-        spatial_covariance_matrix = np.empty((2, 2))
-        spatial_inv_covariance_matrix = np.empty((2, 2))
-        chromo_covariance_matrix = np.empty((n_channels, n_channels))
-        chromo_inv_covariance_matrix = np.empty((n_channels, n_channels))
+        #spatial_covariance_matrix = np.empty((2, 2))
+        #spatial_inv_covariance_matrix = np.empty((2, 2))
+        #chromo_covariance_matrix = np.empty((n_channels, n_channels))
+        #chromo_inv_covariance_matrix = np.empty((n_channels, n_channels))
         spatial_kernel_exponent_offset = np.empty((2, ))
         chromo_kernel_exponent_offset = np.empty((n_channels))
         spatial_kernel_exponent = np.empty((2, ))
@@ -267,10 +267,10 @@ class Likelihood(object):
         d_chromatic_value = cuda.to_device(chromatic_value)
         d_spatial_kernel_argument = cuda.to_device(spatial_kernel_argument)
         d_chromo_kernel_argument = cuda.to_device(chromo_kernel_argument)
-        d_spatial_covariance_matrix = cuda.to_device(spatial_covariance_matrix)
-        d_chromo_covariance_matrix = cuda.to_device(chromo_covariance_matrix)
-        d_spatial_inv_covariance_matrix = cuda.to_device(spatial_inv_covariance_matrix)
-        d_chromo_inv_covariance_matrix = cuda.to_device(chromo_inv_covariance_matrix)
+        #d_spatial_covariance_matrix = cuda.to_device(spatial_covariance_matrix)
+        #d_chromo_covariance_matrix = cuda.to_device(chromo_covariance_matrix)
+        #d_spatial_inv_covariance_matrix = cuda.to_device(spatial_inv_covariance_matrix)
+        #d_chromo_inv_covariance_matrix = cuda.to_device(chromo_inv_covariance_matrix)
         d_spatial_kernel = cuda.to_device(spatial_kernel)
         d_chromo_kernel = cuda.to_device(chromo_kernel)
         d_spatial_kernel_exponent = cuda.to_device(spatial_kernel_exponent)
@@ -296,10 +296,10 @@ class Likelihood(object):
             d_chromatic_value,
             d_spatial_kernel_argument, 
             d_chromo_kernel_argument,    
-            d_spatial_covariance_matrix, 
-            d_chromo_covariance_matrix, 
-            d_spatial_inv_covariance_matrix, 
-            d_chromo_inv_covariance_matrix,
+            #d_spatial_covariance_matrix, 
+            #d_chromo_covariance_matrix, 
+            #d_spatial_inv_covariance_matrix, 
+            #d_chromo_inv_covariance_matrix,
             d_spatial_kernel, 
             d_chromo_kernel,
             d_spatial_kernel_exponent_offset, 
