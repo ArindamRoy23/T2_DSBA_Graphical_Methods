@@ -70,6 +70,8 @@ def get_class_factorised_kernel_cuda_(
         spatial_coord[0] = x_coord; spatial_coord[1] = y_coord
         for channel in range(n_channels):
             chromatic_value[channel] = image_array[channel, x_coord, y_coord]
+        if spatial_kernel_width == 0:
+            print(x_coord, y_coord)
         pixel_multivariate_gaussian_kernel(
             spatial_coord, 
             scribble_coordinates, 
@@ -96,4 +98,4 @@ def get_class_factorised_kernel_cuda_(
         factorised_kernel = 0.0
         for idx in range(n_scribble_points):
             factorised_kernel += spatial_kernel[idx] * chromo_kernel[idx]
-        output_array[x_coord, y_coord] = factorised_kernel / n_scribble_points
+        output_array[x_coord, y_coord] = factorised_kernel #/ n_scribble_points

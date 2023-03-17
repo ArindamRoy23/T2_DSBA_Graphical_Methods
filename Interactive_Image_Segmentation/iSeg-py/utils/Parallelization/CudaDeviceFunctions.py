@@ -132,8 +132,6 @@ def pixel_multivariate_gaussian_kernel(
             kernel_argument, 
             x, 
             sigma,
-            #covariance_matrix, 
-            #inv_covariance, 
             exponent_offset, 
             exponent,
             idx, 
