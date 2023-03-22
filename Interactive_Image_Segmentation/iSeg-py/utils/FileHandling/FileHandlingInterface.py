@@ -126,3 +126,8 @@ class EncodedScribble(XMLScribbleReader, NIfTIScribbleReader):
             class_id = class_id_map[class_name]
             output_list[class_id] = np.array(pixel_list)
         return output_list 
+
+    def get_scribble_dictionary(
+            self
+        ) -> dict:
+        return self.__get_encoded_scribble()
