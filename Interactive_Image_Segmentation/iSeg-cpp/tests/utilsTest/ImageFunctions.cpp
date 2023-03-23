@@ -1,6 +1,0 @@
-/*
-
-Program for testing the utils.ImageFunctions structs 
-
-*/
-
