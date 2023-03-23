@@ -76,8 +76,8 @@ def __compute_gaussian_kernel(
     kernel_argument = 0.0
     n_dim = 2 if spatial else 3
     for dim in range(n_dim):
-        kernel_argument  += (x[dim] - mu[dim]) **2 / sigma.item()  
-    cov_det = sigma.item() **2 if spatial else sigma.item() **3 
+        kernel_argument  += ((x[dim] - mu[dim]) / sigma) **2   
+    cov_det = sigma **2 if spatial else sigma **3 
     norm_denominator = math.sqrt(cov_det) * (2 * math.pi)**(n_dim / 2)
     norm = 1 / norm_denominator
     if debug == 0 or debug == 1 or debug == 2:

@@ -3,9 +3,8 @@ import cupy as cp
 import math
 
 from numba import cuda
-from utils.FileHandling.FileHandlingInterface import *
-from utils.ProbaUtils import *
-from utils.Parallelization.CudaKernels import *
+from ..utils.FileHandling.FileHandlingInterface import *
+from ..utils.Parallelization.CudaKernels import *
 
 class Likelihood(object):
     def __init__(
@@ -300,7 +299,8 @@ class Likelihood(object):
     def __fit(
             self,  
             target_image: TargetImage, 
-            encoded_scribble: EncodedScribble
+            encoded_scribble: EncodedScribble,
+            normalize: bool = False
         ) -> np.ndarray:
         """
         __fit(
@@ -329,12 +329,15 @@ class Likelihood(object):
                 class_scribble_coordinates
             )    
             kde_likelihood_map[idx, :, :] = kde_likelihood
+        if normalize:
+            kde_likelihood_map /= np.sum(kde_likelihood_map, axis = 0) # normalize to sum to one over each class 
         return kde_likelihood_map
 
     def fit(
             self, 
             target_image: TargetImage, 
-            encoded_scribble: EncodedScribble
+            encoded_scribble: EncodedScribble,
+            normalize: bool = False
         ) -> np.ndarray:
         """
         fit(
@@ -350,4 +353,8 @@ class Likelihood(object):
 
         Returns: np.ndarray of shape (n_classes, image_width, image_height)
         """
-        return self.__fit(target_image, encoded_scribble)
+        return self.__fit(
+            target_image, 
+            encoded_scribble,
+            normalize = normalize
+        )
