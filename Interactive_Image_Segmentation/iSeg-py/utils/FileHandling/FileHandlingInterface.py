@@ -20,7 +20,7 @@ In both cases, it is possible to get the actual content of the objects as follow
 
 """
 
-from fileHandling import *
+from .FileHandlingProtected import *
 
 class TargetImage(NIfTIImageReader, JpegImageReader):
     """
@@ -32,8 +32,8 @@ class TargetImage(NIfTIImageReader, JpegImageReader):
     """
     def __init__(
             self,
-            str: path_to_file,
-            bool: is_jpeg = True,
+            path_to_file: str,
+            is_jpeg: bool = True,
         ) -> None:
         """
         __init__(self, path_to_file):
@@ -42,17 +42,6 @@ class TargetImage(NIfTIImageReader, JpegImageReader):
         self.is_jpeg = is_jpeg
         super(TargetImage, self).__init__(path_to_file)
     
-    def get_image_tensor(
-            self
-        ) -> Tensor:
-        """
-        get_image_tensor(self):
-            gets the underlying image as a torch.Tensor object
-        """
-        image = JpegImageReader.get_image_tensor(self) if self.is_jpeg\
-                else NIfTIImageReader.get_image_tensor(self)
-        return image
-    
     def get_image_array(
             self
         ) -> np.ndarray:
@@ -60,7 +49,7 @@ class TargetImage(NIfTIImageReader, JpegImageReader):
         get_image_array(self):
             returns the underlying image as a np.ndarray object
         """
-        image = JpegImageReader.get_image_array(self) if self.is_jpeg\
+        image_array = JpegImageReader.get_image_array(self) if self.is_jpeg\
                 else NIfTIImageReader.get_image_array(self)
         return image_array
     
@@ -68,11 +57,21 @@ class TargetImage(NIfTIImageReader, JpegImageReader):
             self
         ) -> tuple:
         """
-        gets_image_shape(self):
+        get_image_shape(self):
             gets the shape of the underlying image array.
         """
         image_array = self.get_image_array()
         return tuple(image_array.shape[1:])
+    
+    def get_image_channels(
+            self
+        ) -> tuple:
+        """
+        get_image_channels(self):
+            gets number of image channels
+        """
+        image_array = self.get_image_array()
+        return image_array.shape[0]
      
 class EncodedScribble(XMLScribbleReader, NIfTIScribbleReader):
     """
@@ -84,8 +83,8 @@ class EncodedScribble(XMLScribbleReader, NIfTIScribbleReader):
     """
     def __init__(
             self,
-            str: path_to_file,
-            bool: is_xml = True,
+            path_to_file: str,
+            is_xml: bool = True,
         ) -> None:
         """
         __init__(self, path_to_file):
@@ -106,8 +105,7 @@ class EncodedScribble(XMLScribbleReader, NIfTIScribbleReader):
         return encoded_scribble
 
     def get_encoded_scribble(
-            self,
-            dict: class_id_map 
+            self
         ) -> list[np.ndarray]:
         """"
         get_encoded_scribble(self):
@@ -120,10 +118,40 @@ class EncodedScribble(XMLScribbleReader, NIfTIScribbleReader):
                 associated to that class as a flat array (i.e.: [x1, y1, x2, y2, ...])
             
         """
-        n_classes = len(class_map)
-        output_list = [np.empty(0, )]*n_classes
         encoded_scribbles = self.__get_encoded_scribble()
+        n_classes = len(encoded_scribbles)
+        output_list = [np.empty(0, )]*n_classes
+        class_id_map = {key: idx for idx, key in enumerate(list(encoded_scribbles))}
         for class_name, pixel_list in encoded_scribbles.items():
             class_id = class_id_map[class_name]
             output_list[class_id] = np.array(pixel_list)
         return output_list 
+
+    def get_class_names(
+            self
+        ) -> list[str]:
+        """
+        get_class_names(self):
+            gets the name of each distinct classes encoded in the scribble
+        
+        Returns: Names of classes in a list of strings
+        """
+        distinct_classes = self.__get_encoded_scribble().keys()
+        return list(distinct_classes)
+
+    def get_n_classes(
+            self
+        ) -> int:
+        """
+        get_class_names(self):
+            gets the number of distinct classes encoded in the scribble
+        
+        Returns: number of distinct classes as an int
+        """
+        class_names = self.get_class_names()
+        return len(class_names)
+
+    def get_scribble_dictionary(
+            self
+        ) -> dict:
+        return self.__get_encoded_scribble()

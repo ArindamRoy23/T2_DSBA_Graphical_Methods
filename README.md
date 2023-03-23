@@ -31,7 +31,7 @@ Scribbles provided as medical images NII files
 src
     utils
         FileHandling -> scribbles, image reading
-        Parallelization -> cuda kernels
+        Parallelization ->  cuda kernels (Note the grid computation when instantiating the kernel must still be done manually, for example:)
     
     Probability (folder)
         class: ProbabilityDensityEstimator
