@@ -13,7 +13,8 @@ class Likelihood(object):
             n_classes: int, 
             alpha: float = 13e-1, # width of spatial kernel (as in the paper)
             sigma: float = 18e-1, # width of chromatic kernel (as in the paper)
-            on_gpu: bool = False # whether to use gpu for the estimation
+            on_gpu: bool = False, # whether to use gpu for the estimation,
+            debug: int = 0
         ) -> None:
         """"
         __init__(self, n_classes, alpha, sigma, on_gpu = True):
@@ -22,11 +23,21 @@ class Likelihood(object):
             the alpha (hyperparameter for spatial kernel) and 
             sigma (width of chromatic kernel) values and the 
             device on which to compute the estimation (CPU or GPU)
+
+        debug values: 
+            0 -> No debugging
+            1 -> Spatial Kernel
+            2 -> Chromatic Kernel
+            3 -> Spatial Kernel Exponent Argument
+            4 -> Chromatic Kernel Exponent Argument
+            5 -> Spatial Kernel Normalization Term 
+            7 -> Spatial Kernel Width
         """
         self.n_classes = n_classes
         self.on_gpu = on_gpu
         self.alpha = alpha
         self.sigma = sigma
+        self.debug = debug
         
     def __find_scribble_point_with_minimum_distance(
             self,
@@ -131,7 +142,6 @@ class Likelihood(object):
                 scribble_coord inates, 
                 pixelwise_kernel_width,
                 spatial
-                *args
             ):
             Computes the multivariate gaussian kernel for a given class and a given pixel.
             Basically, at the given pixel, computes a kernel for each of the scribble pixels in scribble_coordinates
@@ -171,11 +181,11 @@ class Likelihood(object):
             output shape: n_scibble_pixels, n_channels
         """
         n_channels = target_image.get_image_channels()
-        n_scribble_pixels = scribble_coordinates.shape[0] # flat vector, only one element !!!! NO LONGER THE CASE
+        n_scribble_pixels = scribble_coordinates.shape[0]
         image_array = target_image.get_image_array()
         target_shape = (n_scribble_pixels, n_channels)
         scribble_color_intensity_values = np.empty(target_shape)
-        for idx in range(n_scribble_pixels): # Change back to range(0, n_scribble_pixels - 1, 2) in case of flat vector
+        for idx in range(n_scribble_pixels):
             x_coord,  y_coord = scribble_coordinates[idx]
             pixel_color_intensity = image_array[:, x_coord, y_coord]
             scribble_color_intensity_values[idx, : ] = pixel_color_intensity
@@ -231,52 +241,80 @@ class Likelihood(object):
             target_image: TargetImage, 
             scribble_coordinates: np.ndarray
         ) -> None:
+        """
+        __get_class_factorised_kernel_cuda(
+                target_image, 
+                scribble_coordinates
+            ):
+            gets the factorised likelihood for a given class
+
+            Performs parallel computations on GPU
+
+            Returns: np.ndarray of shape (image_width, image_height)
+             
+        """
+
 
         image_array = target_image.get_image_array()
         n_scribble_points = scribble_coordinates.shape[0]
         n_channels, image_width, image_height = image_array.shape
 
-
         alpha = np.float64(self.alpha)
         sigma = np.float64(self.sigma)
 
-        scribble_color_intensity_values = np.empty((n_scribble_points, n_channels))
-        
+        #scribble_color_intensity_values = np.empty((n_scribble_points, n_channels))
+        scribble_color_intensity_values = self.__find_scribble_pixel_color_intensity_values(
+            target_image, 
+            scribble_coordinates
+        )
     
         output_array = np.empty((image_width, image_height), dtype = np.float64)
+
+        d_debug = cuda.to_device(self.debug)
+
 
         d_alpha = cuda.to_device(alpha)
         d_sigma = cuda.to_device(sigma)
         d_image_array = cuda.to_device(image_array)
         d_scribble_coordinates = cuda.to_device(scribble_coordinates)
         d_scribble_color_intensity_values = cuda.to_device(scribble_color_intensity_values)
-        
+
         d_output_array = cuda.to_device(output_array)
-
-
         threads_per_block = (16, 16)
         blocks_per_grid_x = math.ceil(image_width / threads_per_block[0])
         blocks_per_grid_y = math.ceil(image_height / threads_per_block[1])
         blocks_per_grid = (blocks_per_grid_x, blocks_per_grid_y)
-        
         cuda.synchronize()
-        get_class_factorised_kernel_cuda1_[blocks_per_grid, threads_per_block](
+        get_class_factorised_kernel_cuda_[blocks_per_grid, threads_per_block](
             d_image_array, 
             d_scribble_coordinates, 
             d_alpha, 
             d_sigma,
             d_scribble_color_intensity_values,
-            d_output_array
+            d_output_array,
+            d_debug
         )
         cuda.synchronize()
         return d_output_array
-
 
     def __fit(
             self,  
             target_image: TargetImage, 
             encoded_scribble: EncodedScribble
         ) -> np.ndarray:
+        """
+        __fit(
+                self, 
+                target_image: TargetImage, -> image to be segmented encoded in a TargetImage object
+                scribble_coordinates: EncodedScribble -> scribble to base the segmentation on encoded in an EncodedScribble object
+            ) -> np.ndarray
+        
+        fits the factorised Kernel Density Estimation given an image and a set of user scribbles
+
+        It will either perform the computation in parallel on the gpu if self.on_gpu, otherwise on the cpu
+
+        Returns: np.ndarray of shape (n_classes, image_width, image_height)
+        """
         encoded_scribble = encoded_scribble.get_encoded_scribble()
         image_size = target_image.get_image_shape()
         target_size = (self.n_classes, ) + image_size 
@@ -298,4 +336,18 @@ class Likelihood(object):
             target_image: TargetImage, 
             encoded_scribble: EncodedScribble
         ) -> np.ndarray:
+        """
+        fit(
+                self, 
+                target_image: TargetImage, -> image to be segmented encoded in a TargetImage object
+                scribble_coordinates: EncodedScribble -> scribble to base the segmentation on encoded in an EncodedScribble object
+            ) -> np.ndarray
+        
+        fits the factorised Kernel Density Estimation given an image and a set of user scribbles
+
+        
+        It will either perform the computation in parallel on the gpu if self.on_gpu, otherwise on the cpu
+
+        Returns: np.ndarray of shape (n_classes, image_width, image_height)
+        """
         return self.__fit(target_image, encoded_scribble)
