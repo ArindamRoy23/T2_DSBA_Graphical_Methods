@@ -10,44 +10,6 @@ from typing import Final
 from numba.cuda.cudadrv.devicearray import DeviceNDArray
 
 @cuda.jit(device = True)
-def find_scribble_point_with_minimum_distance(
-        x_coord: Final[int64], 
-        y_coord: Final[int64], 
-        scribble_coordinates: Final[DeviceNDArray]
-    ) -> float64:
-    """
-    find_scribble_point_with_minimum_distance(
-        x_coord: Final[int64], -> integer representing the x_coordinate of the target pixel
-        y_coord: Final[int64], -> integer representing the y_cooridnate of the target pixel
-        scribble_coordinates: Final[DeviceNDArray] -> device array containing the coordinates of the scribble pixels for a given class
-    ) -> float64
-
-    Device function used to retrieve the minimum distance to the closest scribble of a given class 
-    for computing equation (14) of the paper.
-
-    Returns: A scalar, representing the distance to the closests class's scribble point 
-    
-    TESTED AND DOUBLE CHECKED
-    """
-    l2_distance = lambda x1, x2, y1, y2: math.sqrt(((x1 - x2)**2 + (y1 - y2)**2)) 
-    min_distance = math.inf
-    n_scribble_pixels = scribble_coordinates.shape[0] 
-    x_coord = np.int64(x_coord)
-    y_coord = np.int64(y_coord)
-    for idx in range(n_scribble_pixels):
-        x_coord_scribble = scribble_coordinates[idx, 0]
-        y_coord_scribble = scribble_coordinates[idx, 1]
-        distance = l2_distance(
-            x_coord, 
-            x_coord_scribble, 
-            y_coord, 
-            y_coord_scribble
-        )
-        if distance < min_distance:
-            min_distance = distance
-    return min_distance
-
-@cuda.jit(device = True)
 def __compute_gaussian_kernel(
         x: Final[cuda.local.array], 
         mu: Final[cuda.local.array], 
@@ -152,6 +114,44 @@ def __pixel_factored_multivariate_gaussian_kernel(
 
     total_kernel_value[0] /= n_scribble_points
     return total_kernel_value.item()
+
+@cuda.jit(device = True)
+def find_scribble_point_with_minimum_distance(
+        x_coord: Final[int64], 
+        y_coord: Final[int64], 
+        scribble_coordinates: Final[DeviceNDArray]
+    ) -> float64:
+    """
+    find_scribble_point_with_minimum_distance(
+        x_coord: Final[int64], -> integer representing the x_coordinate of the target pixel
+        y_coord: Final[int64], -> integer representing the y_cooridnate of the target pixel
+        scribble_coordinates: Final[DeviceNDArray] -> device array containing the coordinates of the scribble pixels for a given class
+    ) -> float64
+
+    Device function used to retrieve the minimum distance to the closest scribble of a given class 
+    for computing equation (14) of the paper.
+
+    Returns: A scalar, representing the distance to the closests class's scribble point 
+    
+    TESTED AND DOUBLE CHECKED
+    """
+    l2_distance = lambda x1, x2, y1, y2: math.sqrt(((x1 - x2)**2 + (y1 - y2)**2)) 
+    min_distance = math.inf
+    n_scribble_pixels = scribble_coordinates.shape[0] 
+    x_coord = np.int64(x_coord)
+    y_coord = np.int64(y_coord)
+    for idx in range(n_scribble_pixels):
+        x_coord_scribble = scribble_coordinates[idx, 0]
+        y_coord_scribble = scribble_coordinates[idx, 1]
+        distance = l2_distance(
+            x_coord, 
+            x_coord_scribble, 
+            y_coord, 
+            y_coord_scribble
+        )
+        if distance < min_distance:
+            min_distance = distance
+    return min_distance
 
 @cuda.jit(device = True)
 def pixel_factored_multivariate_gaussian_kernel(
