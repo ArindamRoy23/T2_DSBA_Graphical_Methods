@@ -10,7 +10,7 @@ class Prior(object):
     def __init__(
             self, 
             gamma: float,
-            debug: bool = False
+            debug: int = 0
         ) -> None:
         """
         :param img: image of dimensions c x h x w
@@ -48,7 +48,7 @@ class Prior(object):
         :param img: image to segment of dimensions c x h x w
         :param self.gamma: float
         """
-        if self.debug:
+        if self.debug > 1:
             print(f"input of type {type(target_image)}")
         image_array = target_image.get_image_array()
         grayscale_img = np.mean(image_array, axis=0)[None]
@@ -78,7 +78,7 @@ class Prior(object):
             target_image: TargetImage, 
             theta: np.ndarray
         ) -> float:
-        if self.debug:
+        if self.debug > 1:
             print(f"Segmenting target_image of type {type(target_image)}")
         image_array = target_image.get_image_array()
         return self.__prior_energy(target_image, theta)

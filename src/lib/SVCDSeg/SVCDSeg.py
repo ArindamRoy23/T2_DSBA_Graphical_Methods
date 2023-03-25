@@ -19,7 +19,8 @@ class SVCDSeg(object):
             sigma: float = 18e-1, # width of chromatic kernel (as in the paper)
             tau_primal: float = 25e-2, 
             tau_dual: float = 5e-1,
-            max_iter: int = 100,
+            max_iter: int = 500,
+            early_stop: bool = False,
             tolerance: float = 1e-5,
             use_tqdm: bool = True,  
             debug: int = 0 
@@ -38,6 +39,7 @@ class SVCDSeg(object):
         self.max_iter = max_iter
         self.use_tqdm = use_tqdm
         self.tolerance = tolerance
+        self.early_stop = early_stop
 
         self.energy = Energy(
             n_classes = self.n_classes,
@@ -57,6 +59,7 @@ class SVCDSeg(object):
         self.theta_bar = None
         # Dual Variables of the optimization (How to determine the dimensions idk)
         self.xi = None
+        self.prior_history = []
         self.theta_history = []
         self.xi_history = []
         self.theta_bar_history = []
@@ -88,7 +91,8 @@ class SVCDSeg(object):
     def __projection_kappa(
             self, 
             xi:  np.ndarray, 
-            fitted_prior: float
+            fitted_prior: float,
+            smoothing: float = 1e-5
         ) -> np.ndarray:
         """
         Projection |xi_i|<=g/2, Eq.(23). 
@@ -98,7 +102,7 @@ class SVCDSeg(object):
         Returns:
             Projected input xi onto |xi_i|<=g/2.
         """
-        norm_xi = np.sqrt(xi[0]**2 + xi[1]**2) / fitted_prior 
+        norm_xi = np.sqrt(xi[0]**2 + xi[1]**2) / (fitted_prior + smoothing) 
         const = norm_xi>1.0
         xi[0][const] = xi[0][const] / norm_xi[const] # x
         xi[1][const] = xi[1][const] / norm_xi[const] # y
@@ -106,7 +110,8 @@ class SVCDSeg(object):
 
     def __projection_simplex(
             self, 
-            v: np.ndarray
+            v: np.ndarray,
+            smoothing: float = 1e-4
         ) -> np.ndarray:
         """
         Projection onto a simplex.
@@ -119,7 +124,7 @@ class SVCDSeg(object):
         Returns:
             Projection of the input v onto a simplex.
         """
-        nc, height, width= v.shape
+        nc, height, width= v.shape 
         # sort v into mu: mu_1 >= mu_2 >= ... mu_p
         v2d = v.reshape(nc, -1)
         mu = np.sort(v2d, axis = 0)[::-1]
@@ -132,9 +137,15 @@ class SVCDSeg(object):
         cond = (mu - 1/c_vec * sum_vecs) > 0
         cond_ind = c_vec * cond
         p = np.max(cond_ind, axis=0)
-        pn =np.expand_dims(p.astype(int)-1,0)
+        pn = np.expand_dims(p.astype(int)-1,0)
         # Calculate Theta by selecting p-entry from sum_vecs
-        theta = 1 / p * np.take_along_axis(sum_vecs, indices=pn, axis=0)
+        if self.debug > 1:
+            print(f"\ncond_ind {cond_ind}\n")
+            print(f"\nsum_vecs {sum_vecs}\n")
+            print(f"\npn {pn}\n")
+            print(f"\np {p}\n np.take_along_axis(sum_vecs, indices=pn, axis=0)  {np.take_along_axis(sum_vecs, indices=pn, axis=0)}")
+            print(f"denominator {p * np.take_along_axis(sum_vecs, indices=pn, axis=0)}")
+        theta = 1 / (p * np.take_along_axis(sum_vecs, indices=pn, axis=0) + smoothing)
         # Calculate w
         w = v2d-theta
         w[w<0] = 0
@@ -252,7 +263,7 @@ class SVCDSeg(object):
         energy = self.energy_history[-1]
         last_energy = self.energy_history[-2]
         diff = last_energy - energy
-        return diff <= self.tolerance
+        return diff < 0 or diff <= self.tolerance
 
     def __fit(
             self,
@@ -281,6 +292,9 @@ class SVCDSeg(object):
             target_image, 
             self.theta
         )
+        if self.debug:
+            print(f"\nself.fitted_prior {self.fitted_prior}")
+            
         # starting the optimization loop
         for iteration in self.iterator:
             # do dual update
@@ -320,13 +334,14 @@ class SVCDSeg(object):
                 primal_energy, 
                 dual_energy
             )
+            self.prior_history.append(self.fitted_prior)
             # update prior 
             self.fitted_prior = self.energy.fit_prior(
                 target_image, 
                 self.theta
             )
             # check tolerance
-            if self.__check_tolerance():
+            if self.early_stop and self.__check_tolerance():
                 raise RuntimeWarning(
                     f"The execution ended after {iteration} iterations as energy was not decreasing enough, possible divergence"
                 )

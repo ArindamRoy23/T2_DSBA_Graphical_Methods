@@ -130,7 +130,8 @@ class Likelihood(object):
             self,  
             target_image: TargetImage, 
             encoded_scribble: EncodedScribble,
-            normalize: bool = False
+            normalize: bool = False,
+            smoothing: float = 1e-5
         ) -> np.ndarray:
         """
         __fit(
@@ -159,7 +160,7 @@ class Likelihood(object):
             kde_likelihood_map /= np.sum(kde_likelihood_map, axis = 0) # normalize to sum to one over each class
             ## should do this within cuda we can create another method for doing so
         
-        kde_likelihood = -1 * np.log(kde_likelihood_map) 
+        kde_likelihood_map = -1 * np.log((kde_likelihood_map + smoothing))
         return kde_likelihood_map
 
     def fit(
