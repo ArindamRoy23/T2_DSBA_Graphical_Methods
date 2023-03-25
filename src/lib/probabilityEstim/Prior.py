@@ -1,14 +1,22 @@
+"""
+
+"""
+from ..utils.FileHandling.FileHandlingInterface import *
+
+
 import numpy as np
 
 class Prior(object):
     def __init__(
             self, 
-            gamma: float
+            gamma: float,
+            debug: bool = False
         ) -> None:
         """
         :param img: image of dimensions c x h x w
         """
         self.gamma = gamma
+        self.debug = debug
         
     def _gradient_I(
             self, 
@@ -32,7 +40,7 @@ class Prior(object):
 
     def _gradient(
             self, 
-            img -> np.ndarray
+            target_image: TargetImage
         ) -> np.ndarray:
         """
         Computes the term g(x) (eq. 16).
@@ -40,7 +48,10 @@ class Prior(object):
         :param img: image to segment of dimensions c x h x w
         :param self.gamma: float
         """
-        grayscale_img = np.mean(img, axis=0)[None]
+        if self.debug:
+            print(f"input of type {type(target_image)}")
+        image_array = target_image.get_image_array()
+        grayscale_img = np.mean(image_array, axis=0)[None]
         abs_gradient_img = np.abs(self._gradient_I(grayscale_img))
         return np.exp(-abs_gradient_img*self.gamma)
     
@@ -58,13 +69,16 @@ class Prior(object):
         """
         d_Theta = self._gradient_I(theta) # 2 x c x h x w
         abs_d_Theta = np.abs(d_Theta) # 2 x c x h x w
-        g = self._gradient(img, self.gamma) # 2 x h x w
+        g = self._gradient(img) # 2 x h x w
         prod = g*abs_d_Theta # 2 x c x h x w
         return 0.5*np.sum(prod) # scalar
     
     def fit(
             self, 
-            img: np.ndarray, 
+            target_image: TargetImage, 
             theta: np.ndarray
         ) -> float:
-        return self._prior_energy(img, theta)
+        if self.debug:
+            print(f"Segmenting target_image of type {type(target_image)}")
+        image_array = target_image.get_image_array()
+        return self.__prior_energy(target_image, theta)

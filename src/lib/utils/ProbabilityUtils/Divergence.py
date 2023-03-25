@@ -31,7 +31,7 @@ def make_derivative_matrix(
 
 def divergence(
         array: np.ndarray
-    ):
+    ) -> np.ndarray:
     """Creates the divergence of an input array.
     Args: 
         array: input with dimension: [2, class, height, width]
@@ -55,6 +55,6 @@ def derivative(
         width, 
         height
     )
-    dxy = deriv @ np.transpose(array, (2, 1, 0)).reshape(-1, n_channelsS)
+    dxy = deriv @ np.transpose(array, (2, 1, 0)).reshape(-1, n_channels)
     dxy = np.transpose(dxy.reshape(2, width, height, n_channels), (0, 3, 2, 1))
     return dxy

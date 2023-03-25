@@ -1,3 +1,8 @@
+"""
+
+
+"""
+
 import numpy as np 
 import cupy as cp
 import math
@@ -11,6 +16,9 @@ from ..probabilityEstim.Likelihood import Likelihood
 from ..probabilityEstim.Prior import Prior
 
 class Energy(object):
+    """
+    
+    """
     def __init__(
             self,
             n_classes: int, 
@@ -33,11 +41,12 @@ class Energy(object):
             self.n_classes,
             alpha = self.alpha,
             sigma = self.sigma,
+        )
+        self.prior = Prior(
+            gamma = self.gamma,
             debug = self.debug
         )
-        self.prior = PriorEstimator(
-            gamma = self.gamma
-        )
+        self.fitted_likelihood_ = False
         self.fitted_likelihood = None ## compute only once for each energy
     
     def __make_derivative_matrix(
@@ -62,14 +71,30 @@ class Energy(object):
         """
         
         """
-        if not self.fitted_likelihood:
+        if not self.fitted_likelihood_:
             self.fitted_likelihood = self.likelihood.fit(
                 target_image, 
                 encoded_scribble, 
                 normalize = normalize
             )
+            self.fitted_likelihood_ = True
         return self.fitted_likelihood
     
+    def fit_likelihood(
+            self,
+            target_image: TargetImage, 
+            encoded_scribble: EncodedScribble,
+            normalize: bool = True
+        ) -> np.ndarray:
+        """
+        
+        """
+        return self.__fit_likelihood(
+            target_image, 
+            encoded_scribble, 
+            normalize = normalize
+        )
+
     def __fit_prior(
             self, 
             target_image: TargetImage, 
@@ -78,12 +103,24 @@ class Energy(object):
         """
         
         """
-        image_array = target_image.get_image_array()
         fitted_prior = self.prior.fit(
-            image_array, 
+            target_image, 
             theta
         )
         return fitted_prior
+
+    def fit_prior(
+            self,
+            target_image: TargetImage, 
+            theta: np.ndarray
+        ) -> float:
+        """
+        
+        """
+        return self.__fit_prior(
+            target_image, 
+            theta
+        )
 
     def __derivative(
             self, 
@@ -116,7 +153,7 @@ class Energy(object):
         """
         
         """
-        d_xi = self.derivative(theta)
+        d_xi = self.__derivative(theta)
         norm_grad_xi = np.sqrt(d_xi[0]**2 + d_xi[1]**2)
         energy_reg = np.sum(halfg * norm_grad_xi)
         energy_dat = np.sum(theta * fitted_likelihood)
@@ -125,10 +162,10 @@ class Energy(object):
     
     def energy(
             self, 
+            theta: np.ndarray,
             target_image: TargetImage, 
             encoded_scribble: EncodedScribble, 
             normalize: bool = False,
-            theta: np.ndarray, 
         ) -> float:
         """
         
@@ -148,7 +185,6 @@ class Energy(object):
             fitted_prior
         )
 
-
     def __primal_energy(
             self, 
             theta: np.ndarray, 
@@ -164,23 +200,22 @@ class Energy(object):
         return part1 + part2
     
     def primal_energy(
-            self, 
+            self,
+            theta: np.ndarray,
             target_image: TargetImage, 
             encoded_scribble: EncodedScribble,
-            theta: np.ndarray,
             normalize: bool = False,
         ) -> float:
         """
         
         """
-        image_array = target_image.get_image_array()
         fitted_likelihood = self.__fit_likelihood(
             target_image, 
             encoded_scribble, 
             normalize = normalize
         )
         fitted_prior = self.__fit_prior(
-            image_array, 
+            target_image, 
             theta
         )
         return self.__primal_energy(
@@ -197,14 +232,15 @@ class Energy(object):
         """
         
         """
-        arg = np.min(self.lambda_ * fitted_likelihood - self.divergence(xi), axis=0)
+        arg = np.min(self.lambda_ * fitted_likelihood - self.__divergence(xi), axis=0)
         return np.sum(arg)
     
     def dual_energy(
             self,
+            xi: np.ndarray,
             target_image: TargetImage, 
-            encoded_scribble: EncodedScribble, 
-            xi: np.ndarray 
+            encoded_scribble: EncodedScribble,
+            normalize: bool = True 
         ) -> float:
         """
         

@@ -12,7 +12,7 @@ class Likelihood(object):
             n_classes: int, 
             alpha: float = 13e-1, # width of spatial kernel (as in the paper)
             sigma: float = 18e-1, # width of chromatic kernel (as in the paper)
-            debug: int = 0
+            return_: int = 0
         ) -> None:
         """"
         __init__(self, n_classes, alpha, sigma, on_gpu = True):
@@ -22,8 +22,8 @@ class Likelihood(object):
             sigma (width of chromatic kernel) values and the 
             device on which to compute the estimation (CPU or GPU)
 
-        debug values: 
-            0 -> No debugging
+        return_ values: 
+            0 -> No return_ging
             1 -> Spatial Kernel
             2 -> Chromatic Kernel
             3 -> Spatial Kernel Exponent Argument
@@ -34,8 +34,9 @@ class Likelihood(object):
         self.n_classes = n_classes
         self.alpha = alpha
         self.sigma = sigma
-        self.debug = debug
+        self.return_ = return_
     
+
     def __find_scribble_pixel_color_intensity_values(
             self, 
             target_image: TargetImage,
@@ -64,6 +65,7 @@ class Likelihood(object):
             scribble_color_intensity_values[idx, : ] = pixel_color_intensity
         return scribble_color_intensity_values
 
+
     def __get_class_factorised_kernel_cuda_(
             self, 
             target_image: TargetImage, 
@@ -90,15 +92,14 @@ class Likelihood(object):
         alpha = np.float64(self.alpha)
         sigma = np.float64(self.sigma)
 
-        #scribble_color_intensity_values = np.empty((n_scribble_points, n_channels))
         scribble_color_intensity_values = self.__find_scribble_pixel_color_intensity_values(
-            target_image, 
+            target_image,
             scribble_coordinates
         )
     
         output_array = np.empty((image_width, image_height), dtype = np.float64)
 
-        d_debug = cuda.to_device(self.debug)
+        d_return_ = cuda.to_device(self.return_)
 
 
         d_alpha = cuda.to_device(alpha)
@@ -120,7 +121,7 @@ class Likelihood(object):
             d_sigma,
             d_scribble_color_intensity_values,
             d_output_array,
-            d_debug
+            d_return_
         )
         cuda.synchronize()
         return d_output_array
@@ -156,7 +157,9 @@ class Likelihood(object):
             kde_likelihood_map[idx, :, :] = kde_likelihood
         if normalize:
             kde_likelihood_map /= np.sum(kde_likelihood_map, axis = 0) # normalize to sum to one over each class
-            ## should do this within cuda we can create another method for doing so 
+            ## should do this within cuda we can create another method for doing so
+        
+        kde_likelihood = -1 * np.log(kde_likelihood_map) 
         return kde_likelihood_map
 
     def fit(
