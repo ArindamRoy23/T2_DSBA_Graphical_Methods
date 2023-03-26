@@ -34,13 +34,21 @@ def __compute_gaussian_kernel(
     """
     sigma = sigma.item()
     if not sigma:
-        sigma = 1.0
+        if debug == 0 or debug == 1:
+            return 1.0
+        if debug == 3:
+            return 0.0
+        if debug == 5:
+            n_dim = 2 if spatial else 3
+            return (2 * math.pi)**(n_dim / 2)
+        if debug == 6:
+            return sigma
     kernel_argument = 0.0
     n_dim = 2 if spatial else 3
     for dim in range(n_dim):
         kernel_argument  += ((x[dim] - mu[dim]) / sigma) **2   
     cov_det = sigma **2 if spatial else sigma **3 
-    norm_denominator = math.sqrt(cov_det) * (2 * math.pi)**(n_dim / 2)
+    norm_denominator = cov_det * (2 * math.pi)**(n_dim / 2)
     norm = 1 / norm_denominator
     if debug == 0 or debug == 1 or debug == 2:
         return norm * math.exp(-0.5 * kernel_argument) ## This is the correct line, commented out for debugging
@@ -48,6 +56,8 @@ def __compute_gaussian_kernel(
         return -0.5 * kernel_argument
     if debug == 5:
         return norm
+    if debug == 6:
+        return sigma
 
 @cuda.jit(device = True)
 def __pixel_factored_multivariate_gaussian_kernel(
@@ -104,7 +114,7 @@ def __pixel_factored_multivariate_gaussian_kernel(
             debug
         )
         if debug == 0:
-            total_kernel_value[0] += spatial_kernel * chromo_kernel ## This is the correct line, commented out for debugging
+            total_kernel_value[0] += (spatial_kernel + 1e-13) * chromo_kernel ## This is the correct line, commented out for debugging
         if debug == 1 or debug == 3 or debug == 5:
             total_kernel_value[0] += spatial_kernel
         if debug == 2 or debug == 4:
@@ -143,12 +153,16 @@ def find_scribble_point_with_minimum_distance(
     for idx in range(n_scribble_pixels):
         x_coord_scribble = scribble_coordinates[idx, 0]
         y_coord_scribble = scribble_coordinates[idx, 1]
-        distance = l2_distance(
+        distance = (x_coord - x_coord_scribble) * (x_coord - x_coord_scribble) + \
+            (y_coord - y_coord_scribble) * (y_coord - y_coord_scribble)
+        distance = math.sqrt(distance)
+        """distance = l2_distance(
             x_coord, 
             x_coord_scribble, 
             y_coord, 
             y_coord_scribble
         )
+        """
         if distance < min_distance:
             min_distance = distance
     return min_distance

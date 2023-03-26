@@ -19,7 +19,7 @@ class SVCDSeg(object):
             sigma: float = 18e-1, # width of chromatic kernel (as in the paper)
             tau_primal: float = 25e-2, 
             tau_dual: float = 5e-1,
-            max_iter: int = 500,
+            max_iter: int = 5000,
             early_stop: bool = False,
             tolerance: float = 1e-5,
             use_tqdm: bool = True,  
@@ -84,6 +84,9 @@ class SVCDSeg(object):
             self, 
             array: np.ndarray
         ) -> np.ndarray:
+        """
+        
+        """
         return divergence(
             array
         )
@@ -96,14 +99,14 @@ class SVCDSeg(object):
         ) -> np.ndarray:
         """
         Projection |xi_i|<=g/2, Eq.(23). 
-        Args: 
+        Args:
             xi: input of dimension [2, class, height, width]
             halfg: 1/2 g, initialized by init_halfg(...)
         Returns:
             Projected input xi onto |xi_i|<=g/2.
         """
         norm_xi = np.sqrt(xi[0]**2 + xi[1]**2) / (fitted_prior + smoothing) 
-        const = norm_xi>1.0
+        const = norm_xi > 1.0
         xi[0][const] = xi[0][const] / norm_xi[const] # x
         xi[1][const] = xi[1][const] / norm_xi[const] # y
         return xi
@@ -111,7 +114,7 @@ class SVCDSeg(object):
     def __projection_simplex(
             self, 
             v: np.ndarray,
-            smoothing: float = 1e-4
+            smoothing: float = 0.0
         ) -> np.ndarray:
         """
         Projection onto a simplex.
@@ -132,7 +135,7 @@ class SVCDSeg(object):
         A = np.ones([nc,nc])
         z = 1
         sum_vecs = (np.tril(A) @ mu) - z
-        c_vec = np.arange(nc)+1.
+        c_vec = np.arange(nc) + 1.
         c_vec=np.expand_dims(c_vec, axis=0).T
         cond = (mu - 1/c_vec * sum_vecs) > 0
         cond_ind = c_vec * cond
@@ -217,7 +220,7 @@ class SVCDSeg(object):
             self
         ) -> None:#np.ndarray:
         """
-        To be called after the update of primal theta
+
         """
         self.theta_bar_history.append(self.theta_bar)
         last_theta = self.theta_history[-1]
@@ -243,6 +246,9 @@ class SVCDSeg(object):
             primal_energy: float, 
             dual_energy: float
         ) -> None:
+        """
+        
+        """
         # save energy
         self.energy_history.append(
             energy
@@ -260,6 +266,9 @@ class SVCDSeg(object):
             self,
             absolute: bool = True
         ) -> bool:
+        """
+        
+        """
         energy = self.energy_history[-1]
         last_energy = self.energy_history[-2]
         diff = last_energy - energy
@@ -271,7 +280,7 @@ class SVCDSeg(object):
             encoded_scribble: EncodedScribble
         ) -> np.ndarray:
         """
-        Computes the optimal segmentation (theta) iteratively.
+        
         """
         # initializing the iterator
         self.__init_iterator(
@@ -281,7 +290,6 @@ class SVCDSeg(object):
         self.__set_variables_shape(
             target_image
         )
-
         # compute likelihood 
         self.fitted_likelihood = self.energy.fit_likelihood(
             target_image, 
@@ -321,7 +329,6 @@ class SVCDSeg(object):
                 target_image, 
                 encoded_scribble
             )
-            
             # compute dual energy
             dual_energy = self.energy.dual_energy(
                 self.xi,
@@ -353,7 +360,10 @@ class SVCDSeg(object):
             target_image: TargetImage, 
             encoded_scribble: EncodedScribble
         ) -> np.ndarray:
-        if self.debug:
+        """
+        
+        """
+        if self.debug > 1:
             print(f"Segmenting target_image of type {type(target_image)} with scribbles of type {type(encoded_scribble)}")
         return self.__fit(
             target_image,

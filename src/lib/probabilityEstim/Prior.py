@@ -58,7 +58,7 @@ class Prior(object):
     def __prior_energy(
             self, 
             img: np.ndarray, 
-            theta: np.ndarray
+            theta: np.ndarrays
         ) -> float:
         """
         Computes the prior energy (eq. 21)

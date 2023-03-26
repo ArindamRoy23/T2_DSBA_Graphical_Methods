@@ -5,12 +5,12 @@ import math
 
 from numba import cuda
 from scipy import sparse
-
+from scipy.sparse._coo import coo_matrix
 
 def make_derivative_matrix( 
         width: int, 
         height: int
-    ):
+    ) -> coo_matrix:
     """Creates a matrixform of the first order differencing.
     Args:
         w: width of the image to be differentiated
@@ -38,13 +38,13 @@ def divergence(
     Returns:
         Divergence [2, class, height, width] of the input array.
     """
-    n_channels, height, width = array.shape[1:]
+    n_classes, height, width = array.shape[1:]
     deriv = make_derivative_matrix(
         width,
         height
     )
-    dxy = deriv.T @ np.transpose(array, (0, 3, 2, 1)).reshape(-1, n_channels)
-    dxy = np.transpose(dxy.reshape(width, height, n_channels), (2, 1, 0))
+    dxy = deriv.T @ np.transpose(array, (0, 3, 2, 1)).reshape(-1, n_classes)
+    dxy = np.transpose(dxy.reshape(width, height, n_classes), (2, 1, 0))
     return -dxy
 
 def derivative(

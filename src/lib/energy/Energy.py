@@ -155,9 +155,10 @@ class Energy(object):
         """
         d_xi = self.__derivative(theta)
         norm_grad_xi = np.sqrt(d_xi[0]**2 + d_xi[1]**2)
-        energy_reg = np.sum(halfg * norm_grad_xi)
+        #energy_reg = np.sum(halfg * norm_grad_xi)
         energy_dat = np.sum(theta * fitted_likelihood)
-        energy = energy_reg + energy_dat
+        #energy = energy_reg + energy_dat
+        energy = halfg + energy_dat
         return energy
     
     def energy(
@@ -180,7 +181,7 @@ class Energy(object):
             normalize = True
         )
         return self.__energy(
-            theta, 
+            theta,
             fitted_likelihood, 
             fitted_prior
         )
