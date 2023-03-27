@@ -35,7 +35,9 @@ class Likelihood(object):
         self.alpha = alpha
         self.sigma = sigma
         self.return_ = return_
-    
+        self.fitted_likelihood_ = False
+        self.fitted_likelihood = None ## compute only once for each energy
+        
 
     def __find_scribble_pixel_color_intensity_values(
             self, 
@@ -190,9 +192,12 @@ class Likelihood(object):
 
         Returns: np.ndarray of shape (n_classes, image_width, image_height)
         """
-        return self.__fit(
-            target_image, 
-            encoded_scribble,
-            normalize = normalize,
-            neg_log = neg_log
-        )
+        if not self.fitted_likelihood_:
+            self.fitted_likelihood_ = True
+            self.fitted_likelihood =  self.__fit(
+                target_image, 
+                encoded_scribble,
+                normalize = normalize,
+                neg_log = neg_log
+            )
+        return self.fitted_likelihood

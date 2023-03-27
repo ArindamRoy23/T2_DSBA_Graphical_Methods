@@ -156,13 +156,6 @@ def find_scribble_point_with_minimum_distance(
         distance = (x_coord - x_coord_scribble) * (x_coord - x_coord_scribble) + \
             (y_coord - y_coord_scribble) * (y_coord - y_coord_scribble)
         distance = math.sqrt(distance)
-        """distance = l2_distance(
-            x_coord, 
-            x_coord_scribble, 
-            y_coord, 
-            y_coord_scribble
-        )
-        """
         if distance < min_distance:
             min_distance = distance
     return min_distance
