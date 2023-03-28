@@ -15,8 +15,8 @@ class SVCDSeg(object):
             n_classes: int, 
             lambda_: float = 8e-4, 
             gamma: float = 5e-0, 
-            alpha: float = 13e-1, # width of spatial kernel (as in the paper)
-            sigma: float = 18e-1, # width of chromatic kernel (as in the paper)
+            alpha: float = 18e-1, # width of spatial kernel (as in the paper)
+            sigma: float = 13e-1, # width of chromatic kernel (as in the paper)
             tau_primal: float = 25e-2, 
             tau_dual: float = 5e-1,
             max_iter: int = 5000,
@@ -24,7 +24,8 @@ class SVCDSeg(object):
             tolerance: float = 1e-5,
             use_tqdm: bool = True,  
             debug: int = 0,
-            return_: int = 0 
+            return_: int = 0,
+            transpose: bool = False 
         ) -> None:
         """
         
@@ -42,6 +43,7 @@ class SVCDSeg(object):
         self.tolerance = tolerance
         self.early_stop = early_stop
         self.return_ = return_
+        self.transpose = transpose
         self.energy = Energy(
             n_classes = self.n_classes,
             lambda_ = self.lambda_,
@@ -49,7 +51,8 @@ class SVCDSeg(object):
             gamma = self.gamma, 
             sigma = self.sigma,
             debug = self.debug,
-            return_ = self.return_
+            return_ = self.return_,
+            transpose = self.transpose
         )
         # saving fitted likelihood as attribute
         self.fitted_likelihood = None
@@ -117,8 +120,7 @@ class SVCDSeg(object):
 
 
     def __primal_update(
-            self, 
-            fitted_likelihood: np.ndarray
+            self,
         ) -> None:
         """
         Primal Update Step (eq.28).
@@ -131,18 +133,16 @@ class SVCDSeg(object):
             The primal update.
         """
         self.theta_history.append(self.theta)
-        new_theta = self.theta + self.tau_primal * (
-            self.utils.divergence(self.xi) - self.lambda_ * fitted_likelihood
+        self.theta = self.theta + self.tau_primal * (
+            self.utils.divergence(self.xi) - self.lambda_ * self.fitted_likelihood
             )
-        new_theta = self.utils.projection_simplex(new_theta)
-        assert np.all(np.sum(new_theta, axis = 0) - 1 < 1e-5), "Not all elements of the array are 1"
-        self.theta = new_theta
+        self.theta = self.utils.projection_simplex(self.theta)
+        assert np.all(np.sum(self.theta, axis = 0) - 1 < 1e-5), "Not all elements of the array are 1"
         
 
 
     def __dual_update(
-            self,
-            half_g: np.ndarray,
+            self
         ) -> None:
         """
         Dual Update Step (eq.28).
@@ -161,7 +161,7 @@ class SVCDSeg(object):
         )
         self.xi = self.utils.projection_kappa(
             self.xi, 
-            half_g
+            self.halfg
         )
 
     def __auxiliary_update(
@@ -253,13 +253,13 @@ class SVCDSeg(object):
             print(f"__fit_step")
         # do dual update
         self.__dual_update(
-            self.halfg
+        
         )
         if self.debug > 1:
             print(f"dual update done")
         # do primal update
         self.__primal_update(
-            self.fitted_likelihood
+        
         )
         if self.debug > 1:
             print(f"primal update done")
@@ -277,7 +277,7 @@ class SVCDSeg(object):
             encoded_scribble
         )
         if self.debug > 1:
-            print(f"energy computed done")
+            print(f"energy computed")
         # compute primal energy
         primal_energy = self.energy.primal_energy(
             self.theta,
@@ -286,7 +286,7 @@ class SVCDSeg(object):
             encoded_scribble
         )
         if self.debug > 1:
-            print(f"primal energy computed done")
+            print(f"primal energy computed")
         # compute dual energy
         dual_energy = self.energy.dual_energy(
             self.xi,
@@ -294,7 +294,7 @@ class SVCDSeg(object):
             encoded_scribble
         )
         if self.debug > 1:
-            print(f"dual energy computed done")
+            print(f"dual energy computed")
         # update energy history
         self.__update_energy_history(
             energy, 

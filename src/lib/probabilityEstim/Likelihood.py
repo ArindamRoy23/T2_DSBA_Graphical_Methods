@@ -12,7 +12,8 @@ class Likelihood(object):
             n_classes: int, 
             alpha: float = 13e-1, # width of spatial kernel (as in the paper)
             sigma: float = 18e-1, # width of chromatic kernel (as in the paper)
-            return_: int = 0
+            return_: int = 0, 
+            transpose: bool = False
         ) -> None:
         """"
         __init__(self, n_classes, alpha, sigma, on_gpu = True):
@@ -35,6 +36,7 @@ class Likelihood(object):
         self.alpha = alpha
         self.sigma = sigma
         self.return_ = return_
+        self.transpose = transpose
         self.fitted_likelihood_ = False
         self.fitted_likelihood = None ## compute only once for each energy
         
@@ -63,6 +65,8 @@ class Likelihood(object):
         scribble_color_intensity_values = np.empty(target_shape)
         for idx in range(n_scribble_pixels):
             x_coord,  y_coord = scribble_coordinates[idx]
+            if self.transpose:
+                y_coord, x_coord = scribble_coordinates[idx]
             pixel_color_intensity = image_array[:, x_coord, y_coord]
             scribble_color_intensity_values[idx, : ] = pixel_color_intensity
         return scribble_color_intensity_values

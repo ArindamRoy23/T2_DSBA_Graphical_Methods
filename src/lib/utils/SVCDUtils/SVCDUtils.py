@@ -52,7 +52,7 @@ class SVCDUtils():
         deriv_img = self.derivative(grayscale_img)
         deriv_img = np.sum(np.abs(deriv_img), axis=0)
         #if not return_:
-        return np.exp(- gamma * deriv_img)#/2
+        return np.exp(- gamma * deriv_img)/2
         #halfg = np.exp(-self.gamma * deriv_img)/2
         #if return_ == 1:
         #    return (- gamma * deriv_img)#/2

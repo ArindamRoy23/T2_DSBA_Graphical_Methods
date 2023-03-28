@@ -27,7 +27,8 @@ class Energy(object):
             alpha: float = 13e-1, # width of spatial kernel (as in the paper)
             sigma: float = 18e-1, # width of chromatic kernel (as in the paper)
             debug: int = 0,
-            return_: int = 0
+            return_: int = 0,
+            transpose: bool = False
         ) -> None:
         """
         
@@ -39,10 +40,12 @@ class Energy(object):
         self.debug = debug
         self.lambda_ = lambda_
         self.return_ = return_
+        self.transpose = transpose
         self.likelihood = Likelihood(
             self.n_classes,
             alpha = self.alpha,
             sigma = self.sigma,
+            transpose = self.transpose
         )
         self.prior = Prior(
             gamma = self.gamma,
@@ -83,8 +86,8 @@ class Energy(object):
         dtheta = self.utils.derivative(theta)
         part1 = self.lambda_ * np.sum(theta * fitted_likelihood)
         part2 = np.sum(half_g * np.sqrt(dtheta[0]**2 + dtheta[1]**2))
-        return part1 - part2
-        #return part1 + part2
+        #return part1 - part2
+        return part1 + part2
 
 
     def __dual_energy(
@@ -105,7 +108,7 @@ class Energy(object):
             half_g: np.ndarray, 
             target_image: TargetImage, 
             encoded_scribble: EncodedScribble, 
-            normalize: bool = False,
+            normalize: bool = True,
         ) -> float:
         """
         
@@ -113,7 +116,7 @@ class Energy(object):
         fitted_likelihood = self.likelihood.fit(
             target_image, 
             encoded_scribble, 
-            normalize = True
+            normalize = normalize
         )
         return self.__energy(
             theta,
