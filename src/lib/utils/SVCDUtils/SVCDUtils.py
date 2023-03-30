@@ -125,7 +125,23 @@ class SVCDUtils():
         dxy = np.transpose(dxy.reshape(width, height, n_classes), (2, 1, 0))
         return -dxy
 
+    @staticmethod
+    def divergence1(
+            array: np.ndarray
+        ) -> np.ndarray:
+        """
+        Get divergence of vector field F of shape 2 x c x h x w.
+        Returns divergence c x h x w
 
+        The gradient was implemented using forward differences (delta_i = a[i+1] - a[i]). For the last element of a row/col, we do zero-padding
+        delta_i = 0 - a[i]. 
+        """
+        diffs_x = np.diff(array[0], axis = 2, append=0)
+        diffs_y = np.diff(array[1], axis = 1, append=0)
+
+        return -(diffs_x + diffs_y)
+
+        
     @staticmethod
     def projection_kappa(
             xi:  np.ndarray, 

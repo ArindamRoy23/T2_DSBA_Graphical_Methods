@@ -59,15 +59,17 @@ class SVCDSeg(object):
         # saving fitted prior as an attribute
         self.fitted_prior = None
         # Primal Variables of the optimization 
-        self.theta = None
+        self.theta_t1 = None
         # Auxiliary Variables of the optimization (same shape as theta)
         self.theta_bar = None
         # Dual Variables of the optimization (How to determine the dimensions idk)
         self.xi = None
+        # theta_t 
+        self.theta_t = None
         # halfg
         self.halfg = None
         self.prior_history = []
-        self.theta_history = []
+        self.theta_t1_history = []
         self.xi_history = []
         self.theta_bar_history = []
         self.primal_energy_history = [float("inf")]
@@ -87,7 +89,9 @@ class SVCDSeg(object):
 
         """
         width, height = target_image.get_image_shape()
-        self.theta = np.zeros((self.n_classes, width, height))
+        self.theta_t1 = np.zeros((self.n_classes, width, height))
+        #self.theta_t1 = np.random.rand(*(self.n_classes, width, height))
+        self.theta_t = np.zeros((self.n_classes, width, height))
         self.theta_bar = np.zeros((self.n_classes, width, height))
         self.xi = np.zeros((2, self.n_classes, width, height))
 
@@ -132,12 +136,13 @@ class SVCDSeg(object):
         Returns:
             The primal update.
         """
-        self.theta_history.append(self.theta)
-        self.theta = self.theta + self.tau_primal * (
+        self.theta_t = self.theta_t1
+        self.theta_t1_history.append(self.theta_t)
+        self.theta_t1 = self.theta_t + self.tau_primal * (
             self.utils.divergence(self.xi) - self.lambda_ * self.fitted_likelihood
             )
-        self.theta = self.utils.projection_simplex(self.theta)
-        assert np.all(np.sum(self.theta, axis = 0) - 1 < 1e-5), "Not all elements of the array are 1"
+        self.theta_t1 = self.utils.projection_simplex(self.theta_t1)
+        assert np.all(np.sum(self.theta_t1, axis = 0) - 1 < 1e-5), "Not all elements of the array are 1"
         
 
 
@@ -171,9 +176,7 @@ class SVCDSeg(object):
 
         """
         self.theta_bar_history.append(self.theta_bar)
-        current_theta = self.theta
-        last_theta = self.theta_history[-1]
-        self.theta_bar = 2 * current_theta - last_theta
+        self.theta_bar = 2 * self.theta_t1 - self.theta_t
 
 
     def __update_energy_history(
@@ -271,7 +274,7 @@ class SVCDSeg(object):
             print(f"auxiliary update done")
         # compute energy
         energy = self.energy.energy(
-            self.theta, 
+            self.theta_t1, 
             self.halfg,
             target_image, 
             encoded_scribble
@@ -280,7 +283,7 @@ class SVCDSeg(object):
             print(f"energy computed")
         # compute primal energy
         primal_energy = self.energy.primal_energy(
-            self.theta,
+            self.theta_t1,
             self.halfg, 
             target_image, 
             encoded_scribble
@@ -330,7 +333,7 @@ class SVCDSeg(object):
             )
             if stop:
                 break
-        return self.theta
+        return self.theta_t1
 
 
     def fit(

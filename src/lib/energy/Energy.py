@@ -86,7 +86,6 @@ class Energy(object):
         dtheta = self.utils.derivative(theta)
         part1 = self.lambda_ * np.sum(theta * fitted_likelihood)
         part2 = np.sum(half_g * np.sqrt(dtheta[0]**2 + dtheta[1]**2))
-        #return part1 - part2
         return part1 + part2
 
 
