@@ -268,3 +268,79 @@ class XMLScribbleReader(FileReader):
                 #encoded_scribbles[class_name].append(y)
                 encoded_scribbles[class_name].append(coord)
         return dict(encoded_scribbles)
+    
+class PNGScribbleReader(FileReader):
+    """
+    
+    """
+    def __init__(
+            self,
+            path_to_file: str
+        ) -> None:
+        """
+        __init__(self, path_to_file):
+            calls parent class initializer
+        """
+        super(PNGScribbleReader, self).__init__(path_to_file)
+    
+    def  __get_file_content(
+            self
+        ) -> Image:
+        """
+        __get_file_content(self):
+            returns the underlying image as a Image image object   
+        """
+        path = self.path_to_file
+        image =  Image.open(path)
+        return image
+    
+    def __load_segmentation_from_image(
+            self,
+            max_classes: int = 200
+        ) -> None:
+        """
+        
+        """
+        image = self.__get_file_content()
+        segmentation_image = np.asarray(image) / 255
+        segmentation_image = np.transpose(segmentation_image, (2, 0, 1))
+        # Remove alpa channel (if exists)
+        if segmentation_image.shape[0] == 4:
+            alpha = segmentation_image[3]
+            segmentation_image = segmentation_image[:3]
+            segmentation_image[:, alpha < 1] = 0
+        # Find unique colors and create masks
+        colors = []
+        masks = []
+        nonzero = np.nonzero(segmentation_image)
+        while len(nonzero[0]) > 0:
+            if len(colors) >= max_classes:
+                logging.getLogger(__name__).warning(
+                    f"Image '{fpath}' contains too many classes. "
+                    f"Limiting classes to {max_classes}. "
+                    f"{len(nonzero[0])} pixels left as background."
+                )
+            color = segmentation_image[:, nonzero[1][0], nonzero[2][0]]
+            colors.append(color.copy())
+            mask = np.all(color.reshape((3,1,1)) == segmentation_image, axis=0)
+            masks.append(mask.astype(np.float32))
+            segmentation_image[:, mask] =  0
+            nonzero = np.nonzero(segmentation_image)
+        if len(masks) == 0:
+            raise IOError(f"Image '{fpath}' does not contain any classes.")
+        segmentation = np.stack(masks, axis=0)
+        return segmentation
+
+
+    def encode_scribble(
+            self, 
+        ) -> dict:
+        """
+        
+        """
+        scribble = self.__load_segmentation_from_image()
+        scribble_dictionary = defaultdict(np.ndarray)
+        for class_id, class_scribble in enumerate(scribble):
+            scribble_coordinates = np.argwhere(class_scribble == 1)
+            scribble_dictionary[class_id] = scribble_coordinates
+        return dict(scribble_dictionary)

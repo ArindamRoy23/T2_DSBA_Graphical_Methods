@@ -12,8 +12,8 @@ class Likelihood(object):
             n_classes: int, 
             alpha: float = 13e-1, # width of spatial kernel (as in the paper)
             sigma: float = 18e-1, # width of chromatic kernel (as in the paper)
-            on_gpu: bool = False, # whether to use gpu for the estimation,
-            debug: int = 0
+            return_: int = 0, 
+            transpose: bool = False
         ) -> None:
         """"
         __init__(self, n_classes, alpha, sigma, on_gpu = True):
@@ -23,8 +23,8 @@ class Likelihood(object):
             sigma (width of chromatic kernel) values and the 
             device on which to compute the estimation (CPU or GPU)
 
-        debug values: 
-            0 -> No debugging
+        return_ values: 
+            0 -> No return_ging
             1 -> Spatial Kernel
             2 -> Chromatic Kernel
             3 -> Spatial Kernel Exponent Argument
@@ -33,134 +33,13 @@ class Likelihood(object):
             7 -> Spatial Kernel Width
         """
         self.n_classes = n_classes
-        self.on_gpu = on_gpu
         self.alpha = alpha
         self.sigma = sigma
-        self.debug = debug
+        self.return_ = return_
+        self.transpose = transpose
+        self.fitted_likelihood_ = False
+        self.fitted_likelihood = None ## compute only once for each energy
         
-    def __find_scribble_point_with_minimum_distance(
-            self,
-            x_coord: int, 
-            y_coord: int,
-            scribble_coordinates: np.ndarray
-        ) -> float:
-        """"
-        __find_scribble_point_with_minimum_distance(
-                self, 
-                x_coord, 
-                y_coord, 
-                scribble_coordinates
-            ):
-            Given a pixel's coordinates and the scribble_coordinates array
-            finds the l2 distance to the closest scribble point
-        
-        min_distance = __find_scribble_point_with_minimum_distance(
-            x_coord,
-            y_coord, 
-            scribble_coordinates
-        )
-        return min_distance
-        """
-        l2_distance = lambda x1, x2, y1, y2: ((x1 - x2)**2 + (y1 - y2)**2)**(1/2) 
-        min_distance = float("inf")
-        n_scribble_pixels = scribble_coordinates.shape[0] # flat vector, only one element !!!! NO LONGER THE CASE
-        for idx in range(n_scribble_pixels): # Change back to range(0, n_scribble_pixels - 1, 2) in case of flat vector
-            x_coord_scribble, y_coord_scribble= scribble_coordinates[idx]
-            # l2 distance
-            distance = l2_distance(
-                x_coord, 
-                x_coord_scribble, 
-                y_coord, 
-                y_coord_scribble
-            )
-            if distance < min_distance:
-                min_distance = distance
-        return min_distance
-
-    def __multivariate_gaussian_kernel(
-            self,
-            x: np.ndarray, 
-            mu: np.ndarray, 
-            sigma: np.ndarray # width of the kernel (Covariance matrix of gaussian)
-        ) -> np.ndarray:
-        """
-        __pixel_multivariate_gaussian_kernel(
-                self, 
-                x, 
-                mu,
-                sigma
-            ):
-            computes the multivariate gaussian kernel given the taget array, 
-            the mean array and the sigma array (for the kernel width).
-            This computes the kernel function for a given pixel and a given class.
-            Method should be called in a loop over each image pixel and each class.
-
-            for each pixel x in Omega and each pixel x_ij in the scribble for class i it computes
-                k(x - x_ij), where k is the kernel function. 
-                The mean will be given by the value of the pixel (i.e.: kernel is centered at pixel x)
-        
-        kernel_val = __multivariate_gaussian_kernel(
-            x, 
-            mu, 
-            sigma, 
-            self.on_gpu
-        )
-        return kernel_val
-        """
-        n_dimensions = x.shape[0] # either 2 for spatial kernels or 3 for chromo ones
-        covariance_matrix = cp.identity(n_dimensions) if self.on_gpu \
-            else np.identity(n_dimensions)
-        covariance_matrix = sigma * covariance_matrix
-        det_covariance = cp.linalg.det(covariance_matrix) if self.on_gpu \
-            else np.linalg.det(covariance_matrix)
-        inv_covariance = cp.linalg.inv(covariance_matrix) if self.on_gpu \
-            else np.linalg.inv(covariance_matrix)
-        exponent_offset = x - mu
-        exponent = cp.dot(exponent_offset.T, inv_covariance) if self.on_gpu \
-            else np.dot(exponent_offset.T, inv_covariance)
-        exponent = cp.dot(exponent, exponent_offset) if self.on_gpu \
-            else np.dot(exponent, exponent_offset)
-        exponent = -0.5 * exponent
-        norm_denominator = cp.sqrt(det_covariance) * (2 * cp.pi)**(n_dimensions / 2) if self.on_gpu \
-            else np.sqrt(det_covariance) * (2 * np.pi)**(n_dimensions / 2)
-        norm = 1/norm_denominator
-        kernel_val = norm * cp.exp(exponent) if self.on_gpu \
-            else norm * np.exp(exponent) 
-        return kernel_val
-    
-    def __pixel_multivariate_gaussian_kernel(
-            self,  
-            x: np.ndarray, # target pixel information: either of shape (n_channels, ) for chromatic k or (2, ) for the spatial one
-            scribble_coordinates: np.ndarray, # coordinates of the scribble points
-            kernel_width: float
-        ) -> np.ndarray: # output shape: (1, n_scribble_points)
-        """
-        __pixel_multivariate_gaussian_kernel(
-                self, 
-                x, 
-                scribble_coord inates, 
-                pixelwise_kernel_width,
-                spatial
-            ):
-            Computes the multivariate gaussian kernel for a given class and a given pixel.
-            Basically, at the given pixel, computes a kernel for each of the scribble pixels in scribble_coordinates
-            The output shape should be of (1, n_scribble_points)
-        """
-        n_scribble_points = scribble_coordinates.shape[0]
-        gaussian_kernels = cp.empty(n_scribble_points) if self.on_gpu \
-            else np.empty(n_scribble_points)
-        for idx in range(n_scribble_points):
-            x_scribble = scribble_coordinates[idx]
-            ## TODO: COMPUTE KERNEL VALUE
-            kernel_argument = x - x_scribble
-            kernel_val = self.__multivariate_gaussian_kernel(
-                kernel_argument, 
-                x, 
-                kernel_width
-            )
-            ##
-            gaussian_kernels[idx] = kernel_val
-        return gaussian_kernels
 
     def __find_scribble_pixel_color_intensity_values(
             self, 
@@ -186,54 +65,12 @@ class Likelihood(object):
         scribble_color_intensity_values = np.empty(target_shape)
         for idx in range(n_scribble_pixels):
             x_coord,  y_coord = scribble_coordinates[idx]
+            if self.transpose:
+                y_coord, x_coord = scribble_coordinates[idx]
             pixel_color_intensity = image_array[:, x_coord, y_coord]
             scribble_color_intensity_values[idx, : ] = pixel_color_intensity
         return scribble_color_intensity_values
 
-    def get_class_factorised_kernel(
-            self, 
-            target_image: TargetImage, 
-            scribble_coordinates: np.ndarray
-        ) -> np.ndarray:
-        """
-        __get_class_factorised_kernel(
-                target_image, 
-                scribble_coordinates
-            ):
-            gets the factorised likelihood for a given class
-            output shape: (image_width, image_height)
-        """
-        image_array = target_image.get_image_array()
-        image_width, image_height = target_image.get_image_shape()
-        target_size = (image_width, image_height)
-        n_scribble_points = scribble_coordinates.shape[0]
-        scribble_color_intensity_values = self.__find_scribble_pixel_color_intensity_values(
-            target_image, 
-            scribble_coordinates
-        )
-        factorised_kernel_map = np.empty(target_size)
-        for x_coord in range(image_width):
-            for y_coord in range(image_height):
-                spatial_kernel_width = self.__find_scribble_point_with_minimum_distance(
-                    x_coord, 
-                    y_coord, 
-                    scribble_coordinates
-                )
-                spatial_coord = (x_coord, y_coord)
-                chromatic_value = image_array[:, x_coord, y_coord]
-                spatial_kernel = self.__pixel_multivariate_gaussian_kernel(
-                    spatial_coord, 
-                    scribble_coordinates,
-                    self.alpha * spatial_kernel_width
-                )   
-                chromo_kernel = self.__pixel_multivariate_gaussian_kernel(
-                    chromatic_value, 
-                    scribble_color_intensity_values,
-                    self.sigma
-                )
-                factorised_kernel = np.dot(spatial_kernel.T, chromo_kernel)
-                factorised_kernel_map[x_coord, y_coord] = factorised_kernel / n_scribble_points
-        return factorised_kernel_map
 
     def __get_class_factorised_kernel_cuda_(
             self, 
@@ -261,15 +98,14 @@ class Likelihood(object):
         alpha = np.float64(self.alpha)
         sigma = np.float64(self.sigma)
 
-        #scribble_color_intensity_values = np.empty((n_scribble_points, n_channels))
         scribble_color_intensity_values = self.__find_scribble_pixel_color_intensity_values(
-            target_image, 
+            target_image,
             scribble_coordinates
         )
     
         output_array = np.empty((image_width, image_height), dtype = np.float64)
 
-        d_debug = cuda.to_device(self.debug)
+        d_return_ = cuda.to_device(self.return_)
 
 
         d_alpha = cuda.to_device(alpha)
@@ -291,7 +127,7 @@ class Likelihood(object):
             d_sigma,
             d_scribble_color_intensity_values,
             d_output_array,
-            d_debug
+            d_return_
         )
         cuda.synchronize()
         return d_output_array
@@ -300,7 +136,9 @@ class Likelihood(object):
             self,  
             target_image: TargetImage, 
             encoded_scribble: EncodedScribble,
-            normalize: bool = False
+            normalize: bool = False,
+            smoothing: float = 1e-5,
+            neg_log: bool = True
         ) -> np.ndarray:
         """
         __fit(
@@ -323,21 +161,26 @@ class Likelihood(object):
             kde_likelihood = self.__get_class_factorised_kernel_cuda_(
                 target_image, 
                 class_scribble_coordinates    
-            ) if self.on_gpu else \
-            self.get_class_factorised_kernel(
-                target_image, 
-                class_scribble_coordinates
-            )    
+            )
             kde_likelihood_map[idx, :, :] = kde_likelihood
+        print(f"dtype {kde_likelihood_map.dtype}")
         if normalize:
-            kde_likelihood_map /= np.sum(kde_likelihood_map, axis = 0) # normalize to sum to one over each class 
+            kde_likelihood_map /= np.sum(kde_likelihood_map, axis = 0) # normalize to sum to one over each class
+            ## should do this within cuda we can create another method for doing so
+            ## replace nan values with 1/n_classes after normakization
+            kde_likelihood_map = np.nan_to_num(kde_likelihood_map, nan = 1 / self.n_classes)
+        if neg_log:#\
+            #or self.return_ == 1 \
+            #or self.return_ == 2:
+            kde_likelihood_map = -1 * np.log((kde_likelihood_map + smoothing))
         return kde_likelihood_map
 
     def fit(
             self, 
             target_image: TargetImage, 
             encoded_scribble: EncodedScribble,
-            normalize: bool = False
+            normalize: bool = False,
+            neg_log: bool = True
         ) -> np.ndarray:
         """
         fit(
@@ -353,8 +196,12 @@ class Likelihood(object):
 
         Returns: np.ndarray of shape (n_classes, image_width, image_height)
         """
-        return self.__fit(
-            target_image, 
-            encoded_scribble,
-            normalize = normalize
-        )
+        if not self.fitted_likelihood_:
+            self.fitted_likelihood_ = True
+            self.fitted_likelihood =  self.__fit(
+                target_image, 
+                encoded_scribble,
+                normalize = normalize,
+                neg_log = neg_log
+            )
+        return self.fitted_likelihood

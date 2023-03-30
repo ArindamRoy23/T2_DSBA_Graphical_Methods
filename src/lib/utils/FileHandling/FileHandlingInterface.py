@@ -51,6 +51,7 @@ class TargetImage(NIfTIImageReader, JpegImageReader):
         """
         image_array = JpegImageReader.get_image_array(self) if self.is_jpeg\
                 else NIfTIImageReader.get_image_array(self)
+        # image_array = image_array / 255
         return image_array
     
     def get_image_shape(
@@ -73,7 +74,11 @@ class TargetImage(NIfTIImageReader, JpegImageReader):
         image_array = self.get_image_array()
         return image_array.shape[0]
      
-class EncodedScribble(XMLScribbleReader, NIfTIScribbleReader):
+class EncodedScribble(
+        XMLScribbleReader, 
+        NIfTIScribbleReader, 
+        PNGScribbleReader
+    ):
     """
     EncodedScribble(XMLScribbleReader, NIfTIScribbleReader):
         Initializes encoded scribble, whether it is a XML or a NIfTI file 
@@ -99,9 +104,13 @@ class EncodedScribble(XMLScribbleReader, NIfTIScribbleReader):
         """
         __get_encoded_scribble(self):
             gets the underlying scribble, encoded in a dictionary
-        """
-        encoded_scribble = XMLScribbleReader.encode_scribble(self) if self.is_xml\
-                else NIfTIScribbleReader.encode_scribble(self)
+        """ 
+        if self.is_xml == 0: 
+            encoded_scribble = NIfTIScribbleReader.encode_scribble(self) 
+        elif self.is_xml == 1:
+            encoded_scribble = XMLScribbleReader.encode_scribble(self)
+        elif self.is_xml == 2: 
+            encoded_scribble = PNGScribbleReader.encode_scribble(self)
         return encoded_scribble
 
     def get_encoded_scribble(
