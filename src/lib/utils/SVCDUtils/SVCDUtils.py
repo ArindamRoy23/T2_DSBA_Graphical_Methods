@@ -51,13 +51,7 @@ class SVCDUtils():
         grayscale_img = np.mean(image, axis=0)[None]
         deriv_img = self.derivative(grayscale_img)
         deriv_img = np.sum(np.abs(deriv_img), axis=0)
-        #if not return_:
         return np.exp(- gamma * deriv_img)/2
-        #halfg = np.exp(-self.gamma * deriv_img)/2
-        #if return_ == 1:
-        #    return (- gamma * deriv_img)#/2
-        #if return_ == 2:
-        #    return deriv_img
 
 
     def derivative(
@@ -124,22 +118,6 @@ class SVCDUtils():
         dxy = self.derivative_matrix.T @ np.transpose(array, (0, 3, 2, 1)).reshape(-1, n_classes)
         dxy = np.transpose(dxy.reshape(width, height, n_classes), (2, 1, 0))
         return -dxy
-
-    @staticmethod
-    def divergence1(
-            array: np.ndarray
-        ) -> np.ndarray:
-        """
-        Get divergence of vector field F of shape 2 x c x h x w.
-        Returns divergence c x h x w
-
-        The gradient was implemented using forward differences (delta_i = a[i+1] - a[i]). For the last element of a row/col, we do zero-padding
-        delta_i = 0 - a[i]. 
-        """
-        diffs_x = np.diff(array[0], axis = 2, append=0)
-        diffs_y = np.diff(array[1], axis = 1, append=0)
-
-        return -(diffs_x + diffs_y)
 
         
     @staticmethod
@@ -209,9 +187,11 @@ class SVCDUtils():
             img: np.ndarray
         ) -> np.ndarray:
         """
+        
         Computes the gradient of an image. Dims: 2 x c x h x w
 
         :param img: image of dimensions c x h x w
+
         """
         diffs_x = np.diff(img, axis = 2)
         diffs_y = np.diff(img, axis = 1)
@@ -233,9 +213,7 @@ class SVCDUtils():
         """
         n_classes, height, width = theta.shape
         binary_theta = np.zeros_like(theta)
-        # get the index of the dimension with the largest value along the n_class axis
         max_idx = np.argmax(theta , axis=0)
-        # set the corresponding value to 1 in the binary array
         y_idx, x_idx = np.meshgrid(np.arange(height), np.arange(width), indexing='ij')
         binary_theta[max_idx, y_idx, x_idx] = 1
         return binary_theta
