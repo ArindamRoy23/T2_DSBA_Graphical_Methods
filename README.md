@@ -43,6 +43,15 @@ The following arguments can be passed to the program:
 *    ```-tl```, ```--tolerance```: Improvement tolerance for the model (default=1e-5)
 *    ```-ut```, ```--use-tqdm```: Whether to use tqdm for the model (default=True)
 
+# Packages required 
+
+Following packages are required for running this code. Anaconda environment is recommended.:
+matplotlib==3.5.1
+scikit-learn==1.0.2
+numba==0.54.1
+cupy-cuda113==9.5.0
+pandas==1.4.0
+numpy==1.22.2
 
 ## Likelihood function 
 This function aims to assign each pixel in an image to a specific class based on its color and location. The likelihood function, which estimates the joint probability of observing a color and location given a class, is formulated using a Gaussian kernel estimator. The prior function is chosen to favor segmentation regions with shorter boundaries. Together, these functions are used to estimate the posterior probability for a given mapping. To find the optimal mapping, the problem is formulated in its variational formulation. 
@@ -56,5 +65,11 @@ The Dice score, also known as the Sørensen–Dice coefficient, is a similarity 
 Reference: https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
 The python implementation of this function can be found in Scoring.ipynb
 
+## Results
+The results are stored in the plots folder, stored for a few sample images with different values of lambda.  
 
+# Contributors
+* Lorenzo Consoli
+* Oskar Girardin
+* Arindam Roy
 
