@@ -8,15 +8,6 @@ It requires a machine endowed with a cuda-capable GPU. This cli tool allows user
 Interactive image segmentation involves the process of manually specifying the regions of interest in an image. In this project, the proposed method estimates a joint distribution over color and spatial location using a generalized Parzen density estimator applied to each user scribble. This likelihood is then incorporated in a Bayesian MAP estimation approach to multi-region segmentation which in turn is optimized using recently developed convex relaxation techniques.
 
 
-## Dataset
-PASCAL dataset (Pattern Analysis, Statistical Modelling and Computational Learning) is a well-known image dataset used for object recognition tasks in computer vision research. The dataset contains a set of natural images with pixel-level object annotations for a wide range of object categories. The dataset was created as part of the PASCAL Visual Object Classes challenge, which was a yearly competition aimed at advancing the state-of-the-art in object recognition.
-
-The PASCAL dataset consists of more than 11,000 images, each of which has been manually labeled with object annotations. The images are drawn from a variety of sources, including web searches, Flickr, and personal collections. The object annotations include the location and size of each object in the image, as well as a label indicating the object category. The dataset includes a total of 20 object categories, including animals, vehicles, and household objects.
-
-The PASCAL dataset has been widely used in computer vision research, and has served as the basis for many advances in object recognition, including the development of new algorithms for object detection, segmentation, and classification. In addition, the dataset has been used as a benchmark for evaluating the performance of different computer vision systems.
-
-Overall, the PASCAL dataset has played a significant role in advancing the field of computer vision, and continues to be an important resource for researchers working on object recognition and related tasks.
-
 ## Usage
 To use the materials in this repository, you can clone the repository to your local machine using Git:
 git clone https://github.com/ArindamRoy23/T2_DSBA_Graphical_Methods.git
@@ -66,6 +57,15 @@ Reference: https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
 The python implementation of this function can be found in Scoring.ipynb
 
 ## Results
+### Dataset
+PASCAL dataset (Pattern Analysis, Statistical Modelling and Computational Learning) is a well-known image dataset used for object recognition tasks in computer vision research. The dataset contains a set of natural images with pixel-level object annotations for a wide range of object categories. The dataset was created as part of the PASCAL Visual Object Classes challenge, which was a yearly competition aimed at advancing the state-of-the-art in object recognition.
+
+The PASCAL dataset consists of more than 11,000 images, each of which has been manually labeled with object annotations. The images are drawn from a variety of sources, including web searches, Flickr, and personal collections. The object annotations include the location and size of each object in the image, as well as a label indicating the object category. The dataset includes a total of 20 object categories, including animals, vehicles, and household objects.
+
+The PASCAL dataset has been widely used in computer vision research, and has served as the basis for many advances in object recognition, including the development of new algorithms for object detection, segmentation, and classification. In addition, the dataset has been used as a benchmark for evaluating the performance of different computer vision systems.
+
+Overall, the PASCAL dataset has played a significant role in advancing the field of computer vision, and continues to be an important resource for researchers working on object recognition and related tasks.
+
 The results are stored in the plots folder, stored for a few sample images with different values of lambda.  
 
 # Contributors
