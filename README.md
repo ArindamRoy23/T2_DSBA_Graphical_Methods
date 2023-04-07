@@ -66,7 +66,7 @@ The PASCAL dataset has been widely used in computer vision research, and has ser
 
 Overall, the PASCAL dataset has played a significant role in advancing the field of computer vision, and continues to be an important resource for researchers working on object recognition and related tasks.
 
-The results are stored in the plots folder, stored for a few sample images with different values of lambda.  
+The results are stored in the plots folder, stored for a few sample images with different values of lambda. In depth results can be found in the final report. 
 
 # Contributors
 * Lorenzo Consoli
