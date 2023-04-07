@@ -44,7 +44,7 @@ Following packages are required for running this code. Anaconda environment is r
 * pandas==1.4.0
 * numpy==1.22.2
 
-## Likelihood function 
+## Likelihood function and Energies 
 This function aims to assign each pixel in an image to a specific class based on its color and location. The likelihood function, which estimates the joint probability of observing a color and location given a class, is formulated using a Gaussian kernel estimator. The prior function is chosen to favor segmentation regions with shorter boundaries. Together, these functions are used to estimate the posterior probability for a given mapping. To find the optimal mapping, the problem is formulated in its variational formulation. 
 
 The python implementation of the likelihood function can be found in lib/probabilityEstim/Likelihood.py
