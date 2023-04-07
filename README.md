@@ -24,7 +24,7 @@ git clone https://github.com/ArindamRoy23/T2_DSBA_Graphical_Methods.git
 To run the segmentation on an image, please tune and run main.py
 
 
-## Arguments: 
+### Arguments: 
 Arguments
 
 The following arguments can be passed to the program:
