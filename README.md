@@ -36,6 +36,7 @@ The following arguments can be passed to the program:
 
 ### Packages required 
 
+Python requirement: Python 3.10.1 or greater.
 Following packages are required for running this code. Anaconda environment is recommended.:
 * matplotlib==3.5.1
 * scikit-learn==1.0.2
