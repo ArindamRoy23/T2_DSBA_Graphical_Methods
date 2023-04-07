@@ -66,9 +66,10 @@ The PASCAL dataset has been widely used in computer vision research, and has ser
 
 Overall, the PASCAL dataset has played a significant role in advancing the field of computer vision, and continues to be an important resource for researchers working on object recognition and related tasks.
 
-The results are stored in the plots folder, stored for a few sample images with different values of lambda. In depth results can be found in the final report. 
+### Conclusion 
+For the pascal dataset, the algorithm was able to get a median dice score of 0.79 with a standard deviation of 0.21. The results are stored in the plots folder, stored for a few sample images with different values of lambda. In depth results can be found in the final report. 
 
-# Contributors
+## Contributors
 * Lorenzo Consoli
 * Oskar Girardin
 * Arindam Roy
