@@ -29,39 +29,6 @@ Arguments
 
 The following arguments can be passed to the program:
 
--i, --target-image: Input image file (required)
--s, --scribble: Scribble file (required)
--o, --output-file: Output file (required)
--l, --lambda: Lambda parameter for the model (default=8e-4)
--g, --gamma: Gamma parameter for the model (default=5e-0)
--a, --alpha: Alpha parameter for the model (default=18e-1)
--s, --sigma: Sigma parameter for the model (default=13e-1)
--tp, --tau-primal: Tau Primal parameter for the model (default=25e-2)
--td, --tau-dual: Tau Dual parameter for the model (default=5e-1)
--m, --max-iter: Maximum number of iterations for the model (default=1500)
--es, --early-stop: Whether to use early stopping for the model (default=False)
--tl, --tolerance: Improvement tolerance for the model (default=1e-5)
--ut, --use-tqdm: Whether to use tqdm for the model (default=True)
-
-## Likelihood function 
-This function aims to assign each pixel in an image to a specific class based on its color and location. The likelihood function, which estimates the joint probability of observing a color and location given a class, is formulated using a Gaussian kernel estimator. The prior function is chosen to favor segmentation regions with shorter boundaries. Together, these functions are used to estimate the posterior probability for a given mapping. To find the optimal mapping, the problem is formulated in its variational formulation. 
-
-The python implementation of the likelihood function can be found in lib/probabilityEstim/Likelihood.py
-The python implementation of the energies can be found in lib/energy/energy.py
-
-## Performnce metric 
-The Dice score, also known as the Sørensen–Dice coefficient, is a similarity metric used to evaluate the performance of binary image segmentation tasks. It measures the overlap between the predicted and ground truth segmentations, ranging from 0 to 1, where 0 indicates no overlap and 1 indicates a perfect overlap. This project was evaluated on dice scores. 
-
-Reference: https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
-The python implementation of this function can be found in Scoring.ipynb
-
-## SVCDSegmenter
-
-The program implements the "Spatially Varying Color Distribution for Interactive, Multilabel Image Segmentation" paper by AUTHOR1 and AUTHOR2. It requires a machine endowed with a cuda-capable GPU. This cli tool allows users to generate a segmentation mask for a given image using the algorithm derived in the mentioned paper, while also computing the dice score of the segmentation. It saves the segmentation mask to the specified folder, with the same name as the target image.
-Arguments
-
-The following arguments can be passed to the program:
-
 *    ```-i```, ```--target-image```: Input image file (required)
 *    ```-s```, ```--scribble```: Scribble file (required)
 *    ```-o```, ```--output-file```: Output file (required)
@@ -75,4 +42,19 @@ The following arguments can be passed to the program:
 *    ```-es```, ```--early-stop```: Whether to use early stopping for the model (default=False)
 *    ```-tl```, ```--tolerance```: Improvement tolerance for the model (default=1e-5)
 *    ```-ut```, ```--use-tqdm```: Whether to use tqdm for the model (default=True)
+
+
+## Likelihood function 
+This function aims to assign each pixel in an image to a specific class based on its color and location. The likelihood function, which estimates the joint probability of observing a color and location given a class, is formulated using a Gaussian kernel estimator. The prior function is chosen to favor segmentation regions with shorter boundaries. Together, these functions are used to estimate the posterior probability for a given mapping. To find the optimal mapping, the problem is formulated in its variational formulation. 
+
+The python implementation of the likelihood function can be found in lib/probabilityEstim/Likelihood.py
+The python implementation of the energies can be found in lib/energy/energy.py
+
+## Performnce metric 
+The Dice score, also known as the Sørensen–Dice coefficient, is a similarity metric used to evaluate the performance of binary image segmentation tasks. It measures the overlap between the predicted and ground truth segmentations, ranging from 0 to 1, where 0 indicates no overlap and 1 indicates a perfect overlap. This project was evaluated on dice scores. 
+
+Reference: https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
+The python implementation of this function can be found in Scoring.ipynb
+
+
 
