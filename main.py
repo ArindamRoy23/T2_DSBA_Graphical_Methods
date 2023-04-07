@@ -2,143 +2,36 @@
 
 """
 
-import argparse
+from src.parser.SVCDArgParser import *
 from src.experiments.Experiments import *
 
 def main():
-    parser = argparse.ArgumentParser(
-        prog='SVCDSegmenter',
-        description="""
-            The program implements the "Spatially Varying Color Distribution for Interactive, Multilabel Image Segmentation" paper
-            By AUTHOR1 and AUTHOR2.
-            It requires a machine endowed with a cuda-capable GPU.
-            This cli tool allow users to generate a segmentation mask for a given image
-            using the algorithm derived in the mentioned paper, while also computing the dice score of the segmentation. 
-            It saves the segmentation mask to the specified folder, with the same name as the target image
-        """,
-        epilog='Thank you very much for your attention'
-    )
-    parser.add_argument(
-        '-i',
-        '--target-image',
-        type = str,
-        help = "Input Image File",
-        required = True
-    )
-    parser.add_argument(
-        '-s',
-        '--scribble',
-        type = str,
-        help = "Scribble File",
-        required = True
-    )
-    parser.add_argument(
-        '-o',
-        '--output-folder',
-        type = str,
-        help = "Scribble File",
-        required = True
-    )
+    """
     
-    parser.add_argument(
-        '-l'.
-        '--lambda',
-        type = float,
-        const = 8e-4, 
-        default = 8e-4, 
-        help = "Lambda parameter for the model"
-    )
-    parser.add_argument(
-        '-g'.
-        '--gamma',
-        type = float,
-        const = 5e-0, 
-        default = 5e-0, 
-        help = "Gamma parameter for the model"
-    )
-    parser.add_argument(
-        '-a'.
-        '--alpha',
-        type = float,
-        const = 18e-1, 
-        default = 18e-1,  
-        help = "Alpha parameter for the model"
-    )
-    parser.add_argument(
-        '-s'.
-        '--sigma',
-        type = float,
-        const = 13e-1, 
-        default = 13e-1,  
-        help = "Sigma parameter for the model"
-    )
-    parser.add_argument(
-        '-tp'.
-        '--tau-primal',
-        type = float, 
-        const = 25e-2,
-        default = 25e-2, 
-        help = "Tau Primal parameter for the model"
-    )
-    parser.add_argument(
-        '-td'.
-        '--tau-dual',
-        type = float,
-        const = 5e-1,
-        default = 5e-1, 
-        help = "Tau Dual parameter for the model"
-    )
-    parser.add_argument(
-        '-m'.
-        '--max-iter',
-        type = int,
-        const = 1500,
-        default = 1500, 
-        help = "Maximum number of iterations for the model"
-    )
-    parser.add_argument(
-        '-es'.
-        '--early-stop',
-        type = bool,
-        const = False,
-        default = False, 
-        help = "Whether to use early stopping for the model"
-    )
-    parser.add_argument(
-        '-tl'.
-        '--tolerance',
-        type = float, 
-        const = 1e-5,
-        default = 1e-5,
-        help = "Improvement tolerance for the model"
-    )
-    parser.add_argument(
-        '-ut'.
-        '--use-tqdm',
-        type = bool, 
-        const = True,
-        default = True,
-        help = "Whether to use for the model"
-    )
-    parser.parse_args()
+    """
+    SVCDParser = SVCDArgParser()
+    parsed_arguments = SVCDParser()
+    experiment = Experiment()
+
+
+    target_image_path = parsed_arguments.target_image
+    scribble_path = parsed_arguments.scribble
+    lambda_ = parsed_arguments.l
+    gamma = parsed_arguments.gamma
+    alpha = parsed_arguments.alpha
+    sigma = parsed_arguments.sigma
+    tau_primal = parsed_arguments.tau_primal
+    tau_dual = parsed_arguments.tau_dual
+    max_iter = parsed_arguments.max_iter
+    early_stop = parsed_arguments.early_stop
+    tolerance = parsed_arguments.tolerance
+    use_tqdm = parsed_arguments.use_tqdm
     
-    target_image_path = parser.target_image
-    scribble_path = parser.scribble
-    lambda_ = parser.l
-    gamma = parser.gamma
-    alpha = parser.alpha
-    sigma = parser.sigma
-    tau_primal = parser.tau_primal
-    tau_dual = parser.tau_dual
-    max_iter = parser.max_iter
-    early_stop = parser.early_stop
-    tolerance = parser.tolerance
-    use_tqdm = parser.use_tqdm
-    
-    segmenter = run_segmentation(
+
+    segmenter = experiment.run_segmentation(
         target_image_path, 
         scribble_path, 
-        lambda_ = lambda_
+        lambda_ = lambda_,
         gamma = gamma,
         alpha = alpha, 
         sigma = sigma, 
@@ -152,4 +45,6 @@ def main():
 
     final_segmentation = np.argmax(segmenter.theta_t1, axis = 0).transpose(1, 0)
 
+    image_id = experiment.find_image_id(target_image_path)
     
+    experiment.save_segmentation_mask(segmentation_mask, image_id)
