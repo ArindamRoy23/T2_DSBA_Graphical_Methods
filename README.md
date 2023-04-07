@@ -50,7 +50,7 @@ This function aims to assign each pixel in an image to a specific class based on
 The python implementation of the likelihood function can be found in lib/probabilityEstim/Likelihood.py
 The python implementation of the energies can be found in lib/energy/energy.py
 
-## Performnce metric 
+## Performance metric 
 The Dice score, also known as the Sørensen–Dice coefficient, is a similarity metric used to evaluate the performance of binary image segmentation tasks. It measures the overlap between the predicted and ground truth segmentations, ranging from 0 to 1, where 0 indicates no overlap and 1 indicates a perfect overlap. This project was evaluated on dice scores. 
 
 Reference: https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
