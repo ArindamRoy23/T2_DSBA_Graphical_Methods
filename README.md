@@ -43,7 +43,7 @@ The following arguments can be passed to the program:
 *    ```-tl```, ```--tolerance```: Improvement tolerance for the model (default=1e-5)
 *    ```-ut```, ```--use-tqdm```: Whether to use tqdm for the model (default=True)
 
-# Packages required 
+### Packages required 
 
 Following packages are required for running this code. Anaconda environment is recommended.:
 * matplotlib==3.5.1
