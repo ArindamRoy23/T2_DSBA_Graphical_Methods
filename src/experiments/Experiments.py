@@ -31,7 +31,6 @@ class Experiment(object):
             sigma: float = 13e-1, # width of chromatic kernel (as in the paper)
             tau_primal: float = 25e-2, 
             tau_dual: float = 5e-1,
-            max_iter: int = 5000,
             early_stop: bool = False,
             tolerance: float = 1e-5,
             use_tqdm: bool = True,  
@@ -58,7 +57,6 @@ class Experiment(object):
             sigma = sigma, 
             tau_primal = tau_primal, 
             tau_dual = tau_dual, 
-            max_iter = max_iter, 
             early_stop = early_stop, 
             tolerance = tolerance, 
             use_tqdm = use_tqdm, 
@@ -70,6 +68,7 @@ class Experiment(object):
             sample_image_kea,
             sample_scribble_kea
         )
+        # print('Segmenter run ok')
         return segmenter
 
     @staticmethod
@@ -95,14 +94,16 @@ class Experiment(object):
         """
         try:
             os.mkdir(path_dir)
+
         except:
             print("directory already existing, skipping its creation")
-        path_dir = f"{DUMP_DIR}{image_id}_lambda_{lambda_}/"
+        path_dir = f"{DUMP_DIR}/{image_id}_"
         fig, ax = plt.subplots()
         im1 = ax.imshow(segmentation_mask, cmap='magma', alpha=1.0)
         ax.set_title("Segmentation Result")
         seg_result_file = f"{path_dir}segmentation_result.png"
         fig.savefig(seg_result_file)
+        # print(f'seg_result_file: {seg_result_file}')
     
     @staticmethod
     def save_segmentation(

@@ -16,7 +16,7 @@ def main():
 
     target_image_path = parsed_arguments.target_image
     scribble_path = parsed_arguments.scribble
-    lambda_ = parsed_arguments.l
+    lambda_ = parsed_arguments.lmbd
     gamma = parsed_arguments.gamma
     alpha = parsed_arguments.alpha
     sigma = parsed_arguments.sigma
@@ -47,4 +47,8 @@ def main():
 
     image_id = experiment.find_image_id(target_image_path)
     
-    experiment.save_segmentation_mask(segmentation_mask, image_id)
+    experiment.save_segmentation_mask(final_segmentation, image_id)
+
+if __name__ == '__main__':
+    # print('Start')
+    main()

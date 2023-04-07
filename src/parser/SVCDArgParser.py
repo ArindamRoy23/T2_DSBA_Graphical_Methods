@@ -38,87 +38,87 @@ class SVCDArgParser(object):
             '-o',
             '--output-folder',
             type = str,
-            const = r"./plots/",
+            # const = r"./plots/",
             default = r"./plots/",
             help = "Output File",
         )
         self.parser.add_argument(
-            '-l'.
-            '--lambda',
+            '-l',
+            '--lmbd',
             type = float,
-            const = 8e-4, 
+            # const = 8e-4,
             default = 8e-4, 
             help = "Lambda parameter for the model"
         )
         self.parser.add_argument(
-            '-g'.
+            '-g',
             '--gamma',
             type = float,
-            const = 5e-0, 
+            # const = 5e-0,
             default = 5e-0, 
             help = "Gamma parameter for the model"
         )
         self.parser.add_argument(
-            '-a'.
+            '-a',
             '--alpha',
             type = float,
-            const = 18e-1, 
+            # const = 18e-1,
             default = 18e-1,  
             help = "Alpha parameter for the model"
         )
         self.parser.add_argument(
-            '-s'.
+            '-sg',
             '--sigma',
             type = float,
-            const = 13e-1, 
+            # const = 13e-1,
             default = 13e-1,  
             help = "Sigma parameter for the model"
         )
         self.parser.add_argument(
-            '-tp'.
+            '-tp',
             '--tau-primal',
             type = float, 
-            const = 25e-2,
+            # const = 25e-2,
             default = 25e-2, 
             help = "Tau Primal parameter for the model"
         )
         self.parser.add_argument(
-            '-td'.
+            '-td',
             '--tau-dual',
             type = float,
-            const = 5e-1,
+            # const = 5e-1,
             default = 5e-1, 
             help = "Tau Dual parameter for the model"
         )
         self.parser.add_argument(
-            '-m'.
+            '-m',
             '--max-iter',
             type = int,
-            const = 1500,
+            # const = 1500,
             default = 1500, 
             help = "Maximum number of iterations for the model"
         )
         self.parser.add_argument(
-            '-es'.
+            '-es',
             '--early-stop',
             type = bool,
-            const = False,
+            # const = False,
             default = False, 
             help = "Whether to use early stopping for the model"
         )
         self.parser.add_argument(
-            '-tl'.
+            '-tl',
             '--tolerance',
             type = float, 
-            const = 1e-5,
+            # const = 1e-5,
             default = 1e-5,
             help = "Improvement tolerance for the model"
         )
         self.parser.add_argument(
-            '-ut'.
+            '-ut',
             '--use-tqdm',
             type = bool, 
-            const = True,
+            # const = True,
             default = True,
             help = "Whether to use for the model"
         )
